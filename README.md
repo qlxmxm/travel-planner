@@ -18,23 +18,23 @@
 
 ## 화면 지도 (PC 웹 기준)
 
-| 주소 | 화면 | 파일 | 역할 |
+| 주소 | 화면 | 파일 |  |
 |---|---|---|---|
-| `/` | 홈(소개, 스크롤 연출) | `pages/HomePage.jsx` | 공통 |
-| `/login`, `/register` | 로그인/회원가입 | `pages/auth/` | 로그인 |
-| `/trips` | 여행계획 목록: 내 여행 + 다른 사람의 공개 여행, 검색·해시태그 필터, 초대 코드로 참여 | `pages/trips/TripListPage.jsx` | 여행계획 |
-| `/trips/new` | 새 여행 만들기 (기간 자동 계산, 공개 여부, 해시태그, 대표 사진, 친구 추가) | `pages/trips/TripCreatePage.jsx` | 여행계획 |
-| `/trips/:id` | 여행 상세 틀 (공개 전환·해시태그 편집·**여행기에 추가** 버튼) + 일정 탭 | `pages/trips/TripDetailPage.jsx`, `pages/schedule/ScheduleTab.jsx` | 여행계획 |
-| (일정 클릭) | 오른쪽 대화창: 제목 수정, 말풍선, 본인 글만 수정/삭제 | `pages/schedule/PlanChat.jsx` | 여행계획 |
-| `/trips/:id/budget` | 예산 가계부 (총 예산·지출·잔액, 내역 추가/수정/삭제, 멤버만) | `pages/budget/BudgetTab.jsx` | 여행계획 |
-| `/trips/:id/places` | 여행 안의 장소 탭 | `pages/places/PlacesTab.jsx` | 여행계획 |
-| `/trips/:id/members` | 멤버 탭: 초대 코드 복사·새로 만들기, 멤버 내보내기 | `pages/members/MembersTab.jsx` | 여행계획 |
-| `/journals` | 여행기 목록: 검색 + 해시태그 필터, 내 여행기에만 삭제 버튼 | `pages/journals/JournalListPage.jsx` | 여행기 |
-| `/journals/:id` | 여행기 상세 (Day → 시간별 장소 → 글/사진/별점, 댓글 수정·삭제) | `pages/journals/JournalDetailPage.jsx` | 여행기 |
-| `/journals/new`, `/journals/new/from/:tripId` | 여행기 쓰기 (여행계획에서 불러오기, 해시태그) | `pages/journals/JournalWritePage.jsx` | 여행기 |
-| `/journals/:id/edit` | 여행기 수정 (작성자만) | `pages/journals/JournalWritePage.jsx` | 여행기 |
-| `/places` | 장소 목록: 카테고리 탭(맛집/관광명소/숙소) + 검색(이름·카테고리·도시·주소) + 평균 별점 | `pages/places/PlaceListPage.jsx` | 장소 |
-| `/places/:id` | 장소 상세: 정보 + 평균 별점 + 리뷰 작성·수정·삭제(내 리뷰만) | `pages/places/PlaceDetailPage.jsx` | 장소 |
+| `/` | 홈(소개, 스크롤 연출) | `pages/HomePage.jsx` | |
+| `/login`, `/register` | 로그인/회원가입 | `pages/auth/` | |
+| `/trips` | 여행계획 목록: 내 여행 + 다른 사람의 공개 여행, 검색·해시태그 필터, 초대 코드로 참여 | `pages/trips/TripListPage.jsx` | |
+| `/trips/new` | 새 여행 만들기 (기간 자동 계산, 공개 여부, 해시태그, 대표 사진, 친구 추가) | `pages/trips/TripCreatePage.jsx` | |
+| `/trips/:id` | 여행 상세 틀 (공개 전환·해시태그 편집·**여행기에 추가** 버튼) + 일정 탭 | `pages/trips/TripDetailPage.jsx`, `pages/schedule/ScheduleTab.jsx` | |
+| (일정 클릭) | 오른쪽 대화창: 제목 수정, 말풍선, 본인 글만 수정/삭제 | `pages/schedule/PlanChat.jsx` | |
+| `/trips/:id/budget` | 예산 가계부 (총 예산·지출·잔액, 내역 추가/수정/삭제, 멤버만) | `pages/budget/BudgetTab.jsx` | |
+| `/trips/:id/places` | 여행 안의 장소 탭 | `pages/places/PlacesTab.jsx` | |
+| `/trips/:id/members` | 멤버 탭: 초대 코드 복사·새로 만들기, 멤버 내보내기 | `pages/members/MembersTab.jsx` | |
+| `/journals` | 여행기 목록: 검색 + 해시태그 필터, 내 여행기에만 삭제 버튼 | `pages/journals/JournalListPage.jsx` | |
+| `/journals/:id` | 여행기 상세 (Day → 시간별 장소 → 글/사진/별점, 댓글 수정·삭제) | `pages/journals/JournalDetailPage.jsx` | |
+| `/journals/new`, `/journals/new/from/:tripId` | 여행기 쓰기 (여행계획에서 불러오기, 해시태그) | `pages/journals/JournalWritePage.jsx` | |
+| `/journals/:id/edit` | 여행기 수정 (작성자만) | `pages/journals/JournalWritePage.jsx` | |
+| `/places` | 장소 목록: 카테고리 탭(맛집/관광명소/숙소) + 검색(이름·카테고리·도시·주소) + 평균 별점 | `pages/places/PlaceListPage.jsx` | |
+| `/places/:id` | 장소 상세: 정보 + 평균 별점 + 리뷰 작성·수정·삭제(내 리뷰만) | `pages/places/PlaceDetailPage.jsx` | |
 
 ## 폴더 구조
 
