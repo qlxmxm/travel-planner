@@ -9,8 +9,8 @@
 | **여행기** | | `pages/journals/` | `data/sampleJournals.js` | `journals.css` | `routers/journals.py` (여행기·댓글·좋아요) |
 | **장소** | | `pages/places/PlaceListPage.jsx`, `PlaceDetailPage.jsx`, `components/common/StarRating.jsx` | `data/samplePlaces.js` | `placebrowse.css` | `routers/places.py` (장소·리뷰) |
 
-- 해시태그는 **여행계획**과 **여행기**가 같이 씁니다 (`components/common/Tags.jsx`, `TagPicker.jsx`, `data/hashtags.js`). 데이터(`hashtags` 테이블·API)
-- 여행계획 → 여행기 연결: 여행계획 상세의 **[여행기에 추가]** 버튼은 `/journals/new/from/:tripId` 로 이동하고, 여행기 쓰기 화면이 그 여행의 일정을 불러옵니다.
+
+- 여행계획 → 여행기 연결: 여행계획 상세의 **[여행기에 추가]** 버튼 `/journals/new/from/:tripId` 로 이동, 여행기 쓰기 화면이 그 여행의 일정을 불러옴.
 
 ## 일부 공통 파일
 
