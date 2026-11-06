@@ -1,0 +1,22 @@
+/* [공통] 디자인 토큰. 색/둥글기/그림자는 여기 변수만 쓰세요. 값을 바꾸면 전체 화면이 바뀝니다. */
+:root {
+  --accent: #2bc4ea;        /* 포인트(민트 블루): 버튼, Day 알약, 강조 */
+  --accent-dark: #12a8cf;
+  --accent-ink: #0b8fb0;    /* 흰 배경 위 강조 글자 */
+  --accent-soft: #e6f8fd;
+  --ink: #2b2f38;
+  --ink-sub: #646c7a;
+  --ink-mute: #9aa2b0;
+  --line: #ebedf1;
+  --bg: #ffffff;
+  --bg-soft: #f6f8fa;
+  --danger: #e5484d;
+
+  /* 시간 알약 색 (순서대로 반복) */
+  --m1: #f6b0f2; --m2: #ffb1b8; --m3: #8eeaf5; --m4: #c9b6ff; --m5: #b4f0cf;
+
+  --radius-s: 8px; --radius-m: 12px; --radius-l: 20px;
+  --shadow: 0 4px 20px rgba(30, 40, 60, 0.08);
+  --header-h: 64px;
+  --content-w: 1120px;
+}

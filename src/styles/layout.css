@@ -1,0 +1,16 @@
+/* [공통] PC 웹 전체 레이아웃: 헤더 / 본문 / 푸터 */
+.app-shell { min-height: 100vh; display: flex; flex-direction: column; min-width: 1024px; }
+.app-main { flex: 1; width: 100%; max-width: var(--content-w); margin: 0 auto; padding: 32px 24px 80px; }
+.app-main--wide { max-width: none; padding: 0; }
+
+.app-header { position: sticky; top: 0; z-index: 20; height: var(--header-h); background: rgba(255,255,255,.96); border-bottom: 1px solid var(--line); backdrop-filter: blur(6px); }
+.app-header__inner { max-width: var(--content-w); height: 100%; margin: 0 auto; padding: 0 24px; display: flex; align-items: center; gap: 40px; }
+.app-logo { font-size: 20px; font-weight: 800; letter-spacing: -0.5px; }
+.app-logo b { color: var(--accent-ink); }
+.app-nav { display: flex; gap: 28px; flex: 1; }
+.app-nav a { font-weight: 600; color: var(--ink-sub); padding: 21px 0 18px; border-bottom: 3px solid transparent; }
+.app-nav a:hover { color: var(--ink); }
+.app-nav a.active { color: var(--ink); border-bottom-color: var(--accent); }
+.app-header__auth { display: flex; gap: 8px; align-items: center; }
+
+.app-footer { padding: 32px 24px; text-align: center; color: var(--ink-mute); font-size: 13px; background: var(--bg-soft); }

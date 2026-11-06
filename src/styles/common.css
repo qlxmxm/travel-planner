@@ -1,0 +1,52 @@
+/* [공통] 여러 화면에서 같이 쓰는 부품: 버튼, 카드, 폼, 탭, 빈 화면 */
+.btn { display: inline-flex; align-items: center; justify-content: center; gap: 6px; height: 42px; padding: 0 20px; border: 1px solid var(--line); border-radius: 999px; background: #fff; font-weight: 600; transition: background .15s; }
+.btn:hover { background: var(--bg-soft); }
+.btn--primary { background: var(--accent); border-color: var(--accent); color: #fff; }
+.btn--primary:hover { background: var(--accent-dark); }
+.btn--block { width: 100%; height: 50px; border-radius: var(--radius-m); }
+.btn--small { height: 34px; padding: 0 14px; font-size: 14px; }
+.btn--text { border: 0; background: none; height: auto; padding: 2px 6px; color: var(--ink-mute); font-size: 13px; }
+.btn--text:hover { background: none; color: var(--ink); }
+
+.page-header { display: flex; align-items: flex-end; justify-content: space-between; gap: 12px; margin-bottom: 28px; }
+.page-header h1 { font-size: 28px; font-weight: 800; letter-spacing: -0.6px; }
+.page-header p { color: var(--ink-sub); margin-top: 4px; }
+
+.card { background: #fff; border-radius: var(--radius-l); box-shadow: var(--shadow); overflow: hidden; }
+
+.tab-nav { display: flex; justify-content: center; gap: 8px; margin: 36px 0 32px; border-bottom: 1px solid var(--line); }
+.tab-nav a { padding: 14px 22px; font-weight: 600; color: var(--ink-mute); border-bottom: 3px solid transparent; margin-bottom: -1px; }
+.tab-nav a:hover { color: var(--ink); }
+.tab-nav a.active { color: var(--ink); border-bottom-color: var(--accent); }
+
+.empty-state { text-align: center; padding: 64px 16px; color: var(--ink-sub); }
+.empty-state__icon { font-size: 40px; margin-bottom: 8px; }
+.empty-state__title { font-weight: 700; color: var(--ink); margin-bottom: 4px; }
+.empty-state .btn { margin-top: 16px; }
+
+.form-card { max-width: 440px; margin: 24px auto; padding: 36px 32px; }
+.form-card h1 { font-size: 24px; font-weight: 800; margin-bottom: 24px; }
+.field { display: block; margin-bottom: 16px; }
+.field span { display: block; font-size: 14px; font-weight: 600; color: var(--ink-sub); margin-bottom: 6px; }
+.field input, .field select, .field textarea { width: 100%; height: 48px; padding: 0 14px; border: 1px solid var(--line); border-radius: var(--radius-m); background: #fff; }
+.field textarea { height: 96px; padding: 12px 14px; }
+.field input:focus, .field textarea:focus { border-color: var(--accent); }
+.form-card__foot { margin-top: 18px; text-align: center; font-size: 14px; color: var(--ink-sub); }
+.form-card__foot a { color: var(--accent-ink); font-weight: 600; }
+
+.chip-row { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 20px; }
+.chip { padding: 7px 16px; border-radius: 999px; background: #fff; border: 1px solid var(--line); font-size: 14px; font-weight: 600; color: var(--ink-sub); }
+.chip.active { background: var(--accent-soft); border-color: var(--accent); color: var(--accent-ink); }
+.placeholder-box { padding: 22px; border: 2px dashed var(--line); border-radius: var(--radius-m); color: var(--ink-mute); text-align: center; }
+
+.avatar { width: 36px; height: 36px; border-radius: 50%; display: inline-flex; align-items: center; justify-content: center; font-weight: 700; font-size: 14px; background: var(--accent-soft); color: var(--accent-ink); flex: none; }
+
+.btn--danger { background: var(--danger); border-color: var(--danger); color: #fff; }
+.btn--danger:hover { background: #cc383d; }
+
+/* 카드 위의 삭제 버튼 (호버 없이도 보이게) */
+.trip-card-wrap { position: relative; }
+.card-del { position: absolute; top: 12px; right: 12px; z-index: 2; border: 0; padding: 6px 14px; border-radius: 999px; background: rgba(255,255,255,.92); color: var(--danger); font-size: 13px; font-weight: 700; box-shadow: 0 2px 8px rgba(0,0,0,.15); transition: background .15s, color .15s; }
+.card-del:hover { background: var(--danger); color: #fff; }
+.btn--danger-text { color: var(--danger); }
+.btn--danger-text:hover { background: #fdecec; }

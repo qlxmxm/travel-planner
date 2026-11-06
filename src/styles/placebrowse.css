@@ -1,0 +1,49 @@
+/* [장소] 장소 메뉴(목록/상세/리뷰) + 별점. 여행 안의 "장소 탭"은 places.css(여행계획) 입니다. */
+.stars { display: inline-flex; letter-spacing: 1px; line-height: 1; }
+.stars i { font-style: normal; color: #dfe3ea; }
+.stars i.on { color: #f5c400; }
+.stars i.half { background: linear-gradient(90deg, #f5c400 50%, #dfe3ea 50%); -webkit-background-clip: text; background-clip: text; color: transparent; }
+.stars--input { gap: 2px; }
+.stars--input button { border: 0; background: none; padding: 0 1px; color: #dfe3ea; font-size: inherit; line-height: 1; cursor: pointer; }
+.stars--input button.on { color: #f5c400; }
+.stars--input button:hover { transform: scale(1.12); }
+
+.pl-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 20px; }
+.pl-card { display: block; transition: transform .15s, box-shadow .15s; }
+.pl-card:hover { transform: translateY(-3px); box-shadow: 0 8px 28px rgba(30, 40, 60, .13); }
+.pl-card img { width: 100%; height: 170px; object-fit: cover; display: block; }
+.pl-card__body { padding: 14px 16px 18px; }
+.pl-card__cat { color: var(--accent-ink); font-size: 13px; font-weight: 700; }
+.pl-card__name { font-weight: 700; font-size: 17px; margin: 2px 0 6px; }
+.pl-card__rating { display: flex; align-items: center; gap: 8px; color: var(--ink-sub); font-size: 14px; }
+
+.pd { max-width: 860px; margin: 0 auto; }
+.pd__back { display: inline-block; color: var(--ink-sub); font-weight: 600; margin-bottom: 16px; }
+.pd__back:hover { color: var(--ink); }
+.pd__top { display: grid; grid-template-columns: 380px 1fr; gap: 28px; align-items: start; }
+.pd__top img { width: 100%; height: 280px; object-fit: cover; border-radius: var(--radius-l); }
+.pd__cat { color: var(--accent-ink); font-weight: 700; font-size: 14px; }
+.pd__info h1 { font-size: 28px; font-weight: 800; letter-spacing: -0.6px; margin: 2px 0 10px; }
+.pd__avg { display: flex; align-items: center; gap: 8px; margin-bottom: 18px; }
+.pd__avg b { font-size: 20px; }
+.pd__avg span { color: var(--ink-sub); font-size: 14px; }
+.pd__info dl { display: grid; grid-template-columns: 90px 1fr; gap: 8px 12px; font-size: 15px; }
+.pd__info dt { color: var(--ink-mute); font-weight: 600; }
+.pd__intro { margin: 24px 0 18px; line-height: 1.7; }
+.pd__map { margin-bottom: 36px; }
+
+.pd-reviews { border-top: 1px solid var(--line); padding-top: 28px; }
+.pd-reviews h2 { font-size: 18px; font-weight: 800; margin-bottom: 14px; }
+.pd-reviews__note { padding: 14px 16px; background: var(--bg-soft); border-radius: var(--radius-m); color: var(--ink-sub); margin-bottom: 8px; }
+.pd-reviews__form { display: flex; flex-direction: column; gap: 10px; align-items: flex-start; padding: 18px; background: var(--bg-soft); border-radius: var(--radius-m); margin-bottom: 8px; }
+.pd-reviews__rate { display: flex; align-items: center; gap: 10px; font-weight: 600; color: var(--ink-sub); }
+.pd-reviews textarea { width: 100%; min-height: 84px; padding: 12px 14px; border: 1px solid var(--line); border-radius: var(--radius-m); background: #fff; resize: vertical; }
+.pd-reviews textarea:focus { border-color: var(--accent); }
+.pd-reviews .btn:disabled { opacity: .45; cursor: not-allowed; }
+.pd-reviews__list li { display: flex; gap: 12px; padding: 16px 0; border-bottom: 1px solid var(--line); }
+.pd-reviews__body { flex: 1; min-width: 0; }
+.pd-reviews__body b { margin-right: 8px; }
+.pd-reviews__body span { color: var(--ink-mute); font-size: 13px; }
+.pd-reviews__body p { margin: 6px 0 2px; }
+.pd-reviews__edit { display: flex; flex-direction: column; gap: 8px; align-items: flex-start; margin-top: 6px; }
+.pd-reviews__edit > div { display: flex; gap: 6px; }

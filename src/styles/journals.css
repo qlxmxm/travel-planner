@@ -1,0 +1,46 @@
+/* [여행기] 여행기 (트리플 여행기 스타일) */
+.journal-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 32px 24px; }
+.journal-card { display: block; }
+.journal-card img { width: 100%; aspect-ratio: 4 / 3; object-fit: cover; border-radius: var(--radius-l); transition: transform .2s; }
+.journal-card:hover img { transform: scale(1.02); }
+.journal-card h3 { margin-top: 14px; font-size: 19px; line-height: 1.4; font-weight: 700; letter-spacing: -0.4px; }
+.journal-card p { margin-top: 4px; color: var(--ink-sub); font-size: 15px; }
+.journal-card__by { display: flex; align-items: center; gap: 8px; margin-top: 12px; font-size: 14px; color: var(--ink-sub); }
+.journal-card__by .avatar { width: 26px; height: 26px; font-size: 12px; }
+.journal-card__by span:last-child { margin-left: auto; color: var(--ink-mute); }
+
+/* 여행기 상세 (트리플 스타일) */
+.jr { max-width: 640px; margin: 0 auto; }
+.jr__head { margin-bottom: 36px; }
+.jr__head h1 { font-size: 30px; line-height: 1.35; font-weight: 800; letter-spacing: -0.8px; }
+.jr__head p { margin-top: 8px; color: var(--ink-mute); font-size: 14px; }
+.jr-day { margin-bottom: 48px; }
+.jr-day h2 { display: flex; align-items: baseline; gap: 14px; font-size: 18px; font-weight: 800; color: var(--ink-sub); }
+.jr-day h2 time { font-size: 18px; }
+.jr-day__intro { margin: 10px 0 28px; color: var(--ink-mute); font-size: 14px; }
+.jr-item { margin-bottom: 36px; }
+.jr-item__head { display: flex; align-items: center; gap: 12px; }
+.jr-item__head b { font-size: 15px; }
+.jr-time { min-width: 52px; text-align: center; padding: 3px 0; border-radius: 999px; font-size: 12px; font-weight: 700; color: var(--ink); }
+.jr-time--flight { background: var(--m3); min-width: 28px; width: 28px; height: 28px; padding: 0; line-height: 28px; font-size: 13px; }
+.jr-item__body { margin: 12px 0 0 64px; }
+.jr-stars { color: #f5c400; letter-spacing: 1px; font-size: 14px; margin-bottom: 6px; }
+.jr-item__body p { font-size: 14px; line-height: 1.8; color: var(--ink-sub); margin-bottom: 8px; }
+.jr-item__body img { width: 100%; max-height: 380px; object-fit: cover; border-radius: var(--radius-m); margin-top: 12px; }
+
+.jr-comments { border-top: 1px solid var(--line); padding-top: 28px; }
+.jr-comments h2 { font-size: 18px; font-weight: 800; margin-bottom: 14px; }
+.jr-comments__form { display: flex; gap: 8px; margin-bottom: 20px; }
+.jr-comments__form input { flex: 1; height: 46px; padding: 0 16px; border: 1px solid var(--line); border-radius: 999px; }
+.jr-comments__form input:focus { border-color: var(--accent); }
+.jr-comments li { display: flex; gap: 12px; padding: 14px 0; border-bottom: 1px solid var(--line); }
+.jr-comments__body { flex: 1; min-width: 0; }
+.jr-comments__body b { margin-right: 8px; }
+.jr-comments__body span { color: var(--ink-mute); font-size: 13px; }
+.jr-comments__body p { margin: 4px 0 2px; }
+
+.jr__owner { display: flex; gap: 8px; margin-top: 14px; }
+
+/* 해시태그 표시 위치 (여행기 카드/상세) */
+.journal-card .tags { margin-top: 8px; }
+.jr__head .tags { justify-content: center; }

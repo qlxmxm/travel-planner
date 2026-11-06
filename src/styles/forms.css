@@ -1,0 +1,35 @@
+/* [공통] 폼, 팝업창, 사진 고르기 */
+.form-page { max-width: 640px; margin: 0 auto; }
+.form-page__card { padding: 32px; }
+.form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 0 16px; }
+.field--full { grid-column: 1 / -1; }
+.field small { display: block; margin-top: 6px; color: var(--ink-mute); font-size: 13px; }
+.field input[type="time"], .field input[type="date"], .field select { padding-right: 10px; }
+.field select { appearance: auto; }
+.form-actions { display: flex; gap: 10px; justify-content: flex-end; margin-top: 8px; }
+.form-error { color: var(--danger); font-size: 14px; margin: -6px 0 12px; }
+
+.photo-picker { display: flex; flex-wrap: wrap; gap: 8px; }
+.photo-picker__item { padding: 0; border: 3px solid transparent; border-radius: 12px; overflow: hidden; background: none; transition: transform .15s, border-color .15s; }
+.photo-picker__item:hover { transform: translateY(-2px); }
+.photo-picker__item.on { border-color: var(--accent); }
+.photo-picker__item img { width: 100%; height: 100%; object-fit: cover; }
+
+.modal-back { position: fixed; inset: 0; z-index: 50; background: rgba(20,28,40,.45); display: flex; align-items: center; justify-content: center; padding: 24px; animation: fade .2s ease; }
+.modal { width: 100%; max-height: calc(100vh - 48px); overflow-y: auto; background: #fff; border-radius: var(--radius-l); padding: 24px 26px 26px; box-shadow: 0 30px 80px rgba(0,0,0,.3); animation: modal-in .3s cubic-bezier(.22,.8,.3,1); }
+.modal__head { display: flex; align-items: center; justify-content: space-between; margin-bottom: 18px; }
+.modal__head h2 { font-size: 20px; font-weight: 800; }
+@keyframes fade { from { opacity: 0; } }
+@keyframes modal-in { from { opacity: 0; transform: translateY(20px) scale(.97); } }
+
+.star-input { display: flex; gap: 2px; }
+.star-input button { border: 0; background: none; font-size: 26px; color: var(--line); padding: 0 2px; transition: transform .12s; }
+.star-input button.on { color: #f5c400; }
+.star-input button:hover { transform: scale(1.15); }
+
+/* 여행기 쓰기 편집기 */
+.editor-day { border: 1px solid var(--line); border-radius: var(--radius-l); padding: 22px; margin-bottom: 20px; background: #fff; }
+.editor-day__head { display: flex; align-items: center; gap: 12px; margin-bottom: 14px; }
+.editor-day__head .day-pill { margin: 0; }
+.editor-item { background: var(--bg-soft); border-radius: var(--radius-m); padding: 16px; margin-bottom: 12px; }
+.editor-item__top { display: flex; align-items: center; justify-content: space-between; margin-bottom: 10px; font-weight: 700; color: var(--ink-sub); }

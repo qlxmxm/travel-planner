@@ -1,0 +1,6 @@
+/* [여행계획] 멤버 탭: 초대 코드 */
+.invite-box { display: flex; align-items: center; justify-content: space-between; gap: 16px; padding: 20px 24px; margin-bottom: 16px; }
+.invite-box span { display: block; color: var(--ink-sub); font-size: 14px; font-weight: 600; }
+.invite-box b { display: block; font-size: 26px; letter-spacing: 2px; margin: 2px 0; }
+.invite-box small { color: var(--ink-mute); font-size: 13px; }
+.invite-box__btns { display: flex; gap: 8px; }

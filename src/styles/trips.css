@@ -1,0 +1,31 @@
+/* [여행계획] 여행 목록 / 여행 상세 헤더 */
+.trip-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 24px; }
+.trip-card { display: block; transition: transform .15s; }
+.trip-card:hover { transform: translateY(-4px); }
+.trip-card img { width: 100%; height: 190px; object-fit: cover; }
+.trip-card__body { padding: 16px 18px 20px; }
+.trip-card__title { font-weight: 700; font-size: 18px; }
+.trip-card__meta { color: var(--ink-sub); font-size: 14px; margin-top: 4px; }
+
+.trip-head { text-align: center; padding-top: 24px; }
+.trip-head__photo { width: 108px; height: 108px; border-radius: 50%; object-fit: cover; margin: 0 auto 20px; box-shadow: var(--shadow); }
+.trip-head h1 { font-size: 36px; line-height: 1.35; font-weight: 800; letter-spacing: -1px; }
+.trip-head h1 em { font-style: normal; color: var(--accent); }
+.trip-head p { margin-top: 10px; color: var(--ink-sub); }
+
+/* ===== 여행계획 목록/상세 (공개 배지, 해시태그, 여행기에 추가) ===== */
+.header-actions { display: flex; gap: 8px; }
+.badge { display: inline-block; padding: 3px 10px; border-radius: 999px; font-size: 12px; font-weight: 700; background: rgba(255,255,255,.92); color: var(--ink-sub); box-shadow: 0 2px 8px rgba(0,0,0,.12); }
+.badge--on { color: var(--accent-ink); }
+.trip-card__photo { position: relative; }
+.trip-card__photo .badge { position: absolute; top: 12px; left: 12px; }
+.trip-head__tags { display: flex; justify-content: center; align-items: center; gap: 8px; margin-top: 12px; }
+.trip-head__tags .tags { margin-top: 0; }
+.trip-head__tags .badge { background: var(--bg-soft); box-shadow: none; }
+.trip-head__tags .badge--on { background: var(--accent-soft); }
+.trip-head__tools { display: flex; justify-content: center; gap: 8px; margin-top: 14px; }
+.trip-head__journal { margin-top: 18px; display: flex; flex-direction: column; align-items: center; gap: 8px; }
+.trip-head__journal small, .trip-head__hint { color: var(--ink-mute); font-size: 14px; }
+.trip-head__hint { margin-top: 16px; }
+.readonly-note { color: var(--ink-mute); font-size: 14px; }
+.form-ok { color: var(--accent-ink); font-size: 14px; font-weight: 600; margin: -6px 0 12px; }

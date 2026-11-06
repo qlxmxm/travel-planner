@@ -1,0 +1,23 @@
+/* [여행계획] 예산 가계부 탭 */
+.budget-summary { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; margin-bottom: 14px; }
+.budget-summary .card { padding: 20px 22px; display: flex; flex-direction: column; gap: 4px; }
+.budget-summary span { color: var(--ink-sub); font-weight: 600; font-size: 14px; }
+.budget-summary b { font-size: 24px; font-weight: 800; letter-spacing: -.5px; }
+.budget-summary small { color: var(--ink-mute); font-size: 13px; }
+.budget-summary .over b { color: var(--danger); }
+.budget-bar { height: 10px; background: var(--bg-soft); border-radius: 999px; overflow: hidden; margin-bottom: 24px; }
+.budget-bar i { display: block; height: 100%; background: var(--accent); border-radius: 999px; transition: width .4s ease; }
+.budget-bar.over i { background: var(--danger); }
+.budget-form { display: grid; grid-template-columns: 130px 1fr 180px auto; gap: 8px; margin-bottom: 12px; }
+.budget-form select, .budget-form input { height: 46px; padding: 0 14px; border: 1px solid var(--line); border-radius: var(--radius-m); background: #fff; }
+.budget-form input:focus, .budget-form select:focus { border-color: var(--accent); }
+.budget-list li { display: flex; align-items: center; gap: 14px; padding: 14px 20px; border-bottom: 1px solid var(--line); }
+.budget-list__memo { flex: 1; font-weight: 600; }
+.budget-list__memo small { display: block; color: var(--ink-mute); font-weight: 400; font-size: 13px; }
+.budget-list b.minus { color: var(--danger); }
+.budget-list b.plus { color: var(--accent-ink); }
+.kind { font-size: 12px; font-weight: 700; padding: 3px 10px; border-radius: 999px; background: var(--bg-soft); color: var(--ink-sub); min-width: 76px; text-align: center; flex: none; }
+.kind--budget, .kind--add { background: var(--accent-soft); color: var(--accent-ink); }
+.kind--used { background: #fdecec; color: var(--danger); }
+.budget-edit { display: flex; flex: 1; gap: 6px; }
+.budget-edit input { flex: 1; height: 38px; padding: 0 12px; border: 1px solid var(--line); border-radius: 999px; min-width: 0; }
