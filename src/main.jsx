@@ -18,6 +18,7 @@ import './styles/placebrowse.css';
 import './styles/forms.css';
 import './styles/journals.css';
 
+
 ReactDOM.createRoot(document.getElementById('root')).render(
   <React.StrictMode>
     <BrowserRouter>
