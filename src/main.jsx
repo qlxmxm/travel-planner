@@ -17,7 +17,7 @@ import './styles/places.css';
 import './styles/placebrowse.css';
 import './styles/forms.css';
 import './styles/journals.css';
-
+import './styles/auth.css';
 
 ReactDOM.createRoot(document.getElementById('root')).render(
   <React.StrictMode>
