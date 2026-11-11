@@ -3,17 +3,15 @@
 # users 테이블은 DB 정의서대로 미리 만들어져 있어야 합니다.
 import asyncio
 
-from sqlalchemy import select
-
 from backend.db import AsyncSessionLocal
 from backend.login.models import User
 from backend.login.security import hash_password
+from backend.login.service import get_user_by_email
 
 
 async def main():
     async with AsyncSessionLocal() as db:
-        found = await db.execute(select(User).where(User.u_email == "test@test.com"))
-        if found.scalar_one_or_none():
+        if await get_user_by_email(db, "test@test.com"):
             print("이미 있습니다")
             return
         db.add(User(u_email="test@test.com", u_name="테스트", u_pw=hash_password("test1234")))

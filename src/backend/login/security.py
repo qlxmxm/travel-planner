@@ -14,7 +14,7 @@ from backend.core.settings import settings
 from backend.db import get_db
 from backend.login.models import User
 
-bearer = HTTPBearer(auto_error=False)
+bearer_scheme = HTTPBearer(auto_error=False)
 
 
 def hash_password(plain: str) -> str:
@@ -36,20 +36,25 @@ def create_access_token(u_id: int) -> str:
     return jwt.encode(payload, settings.secret_key, algorithm=settings.jwt_algorithm)
 
 
+def decode_access_token(token: str) -> int:
+    """토큰이 올바르면 u_id 를 돌려주고, 아니면 jwt.PyJWTError / ValueError 를 냅니다."""
+    payload = jwt.decode(token, settings.secret_key, algorithms=[settings.jwt_algorithm])
+    return int(payload["sub"])
+
+
 async def get_current_user(
-    cred: HTTPAuthorizationCredentials | None = Depends(bearer),
+    credentials: HTTPAuthorizationCredentials | None = Depends(bearer_scheme),
     db: AsyncSession = Depends(get_db),
 ) -> User:
     """Authorization: Bearer <token> 을 확인해서 User 를 돌려줍니다. 실패하면 401."""
-    error = HTTPException(status.HTTP_401_UNAUTHORIZED, "로그인이 필요합니다")
-    if cred is None:
-        raise error
+    unauthorized = HTTPException(status.HTTP_401_UNAUTHORIZED, "로그인이 필요합니다")
+    if credentials is None:
+        raise unauthorized
     try:
-        payload = jwt.decode(cred.credentials, settings.secret_key, algorithms=[settings.jwt_algorithm])
-        u_id = int(payload["sub"])
+        u_id = decode_access_token(credentials.credentials)
     except (jwt.PyJWTError, KeyError, ValueError):
-        raise error
+        raise unauthorized
     user = await db.get(User, u_id)
     if user is None:
-        raise error
+        raise unauthorized
     return user
