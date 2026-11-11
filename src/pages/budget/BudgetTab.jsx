@@ -2,12 +2,12 @@
 //  - kind: 'budget' 예산 / 'add' 추가 예산 / 'used' 지출   (DB 예산 테이블의 b_budget / b_add / b_used)
 //  - 지금은 화면 안에서만 동작합니다.
 // TODO: GET/POST /plans/{id}/budgets, PUT/DELETE /budgets/{id} 연결, 지출 카테고리(식비/교통 등)·통계 그래프
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useOutletContext } from 'react-router-dom';
 import EmptyState from '../../components/common/EmptyState.jsx';
 import { sampleBudgets } from '../../data/sampleTrips.js';
 
-const KINDS = { budget: '예산', add: '추가 예산', used: '지출' };
+const KINDS = { b_budget: '예산', b_add: '추가 예산', e_amount: '지출' };
 const won = (n) => `${n.toLocaleString('ko-KR')}원`;
 
 export default function BudgetTab() {
@@ -18,13 +18,32 @@ export default function BudgetTab() {
   const [editId, setEditId] = useState(null);
   const [draft, setDraft] = useState({ memo: '', amount: '' });
 
+  useEffect(()=>{
+    // 1. 해당 여행(trip_id)에 맞는 예산 내역 데이터 가져오기
+    const loadedItems = sampleBudgets[trip?.trip_id] ?? [];
+    
+    // 2. 상태(State)에 반영하여 화면을 리렌더링
+    setItems(loadedItems);
+    
+    // 3. 폼 입력값 초기화 및 에러 메시지 삭제
+    setForm({ kind: 'b_used', memo: '', amount: '' });
+    setError('');
+    setEditId(null);
+  }, [trip?.trip_id]); // <- 여행 ID가 바뀌거나 페이지가 처음 로드될 때 실행됩니다.
+
+  },[form])
+
   if (!canEdit) return <EmptyState icon="🔒" title="멤버만 볼 수 있어요" description="예산 가계부는 이 여행의 멤버에게만 보여요." />;
+
+
 
   const sum = (k) => items.filter((i) => i.kind === k).reduce((s, i) => s + i.amount, 0);
   const total = sum('budget') + sum('add');
   const used = sum('used');
   const remain = total - used;
   const pct = total > 0 ? Math.min(100, Math.round((used / total) * 100)) : 0;
+
+
 
   const add = (e) => {
     e.preventDefault();
@@ -34,20 +53,28 @@ export default function BudgetTab() {
     setItems((l) => [...l, { b_id: Date.now(), kind: form.kind, memo: form.memo.trim(), amount, date: new Date().toISOString().slice(0, 10) }]);
     setForm((f) => ({ ...f, memo: '', amount: '' })); setError('');
   };
+
+
   const save = () => {
     const amount = Number(draft.amount);
     if (draft.memo.trim() && amount > 0) setItems((l) => l.map((i) => (i.b_id === editId ? { ...i, memo: draft.memo.trim(), amount } : i)));
     setEditId(null);
   };
 
+
+
+
   return (
     <div className="budget">
       <div className="budget-summary">
-        <div className="card"><span>총 예산</span><b>{won(total)}</b><small>예산 {won(sum('budget'))} + 추가 {won(sum('add'))}</small></div>
-        <div className="card"><span>지출</span><b>{won(used)}</b><small>{items.filter((i) => i.kind === 'used').length}건</small></div>
+        <div className="card"><span>총 예산</span><b>{won(total)}</b><small>예산 {won(sum('b_budget'))} + 추가 {won(sum('b_add'))}</small></div>
+        <div className="card"><span>지출</span><b>{won(used)}</b><small>{items.filter((i) => i.kind === 'b_used').length}건</small></div>
         <div className={`card${remain < 0 ? ' over' : ''}`}><span>잔액</span><b>{won(remain)}</b><small>{remain < 0 ? '예산을 초과했어요' : `${100 - pct}% 남음`}</small></div>
       </div>
       <div className={`budget-bar${remain < 0 ? ' over' : ''}`} role="img" aria-label={`예산의 ${pct}% 사용`}><i style={{ width: `${pct}%` }} /></div>
+
+
+
 
       <form className="budget-form" onSubmit={add}>
         <select value={form.kind} onChange={(e) => setForm({ ...form, kind: e.target.value })} aria-label="구분">
