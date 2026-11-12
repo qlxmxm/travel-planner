@@ -1,15 +1,12 @@
-# [공통] FastAPI 시작점. 실행: uvicorn main:app --reload --port 8000
-# 새 라우터가 생기면 아래에 include_router 한 줄만 추가하세요.
+# [공통] FastAPI 시작점. src 폴더에서 실행:  uvicorn backend.main:app --reload --port 8000
+# 새 라우터가 생기면 아래에 include_router 한 줄만 추가하세요. (각자 자기 폴더의 router.py)
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
-from database import Base, engine
-from routers import auth
-
-# 테이블이 없으면 만들어 줍니다. (이미 SQL로 만들었다면 아무 일도 일어나지 않음)
-# 주의: 이 파일에 모델이 import 되어 있어야 테이블이 만들어집니다.
-import models  # noqa: F401
-Base.metadata.create_all(bind=engine)
+from backend.login.router import router as login_router
+# from backend.plans.router import router as plans_router         # [여행계획]
+# from backend.journals.router import router as journals_router   # [여행기]
+# from backend.places.router import router as places_router       # [장소]
 
 app = FastAPI(title="여행 계획 플래너 API")
 
@@ -21,10 +18,10 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-app.include_router(auth.router, prefix="/api")
-# app.include_router(plans.router, prefix="/api")      # [여행계획]
-# app.include_router(journals.router, prefix="/api")   # [여행기]
-# app.include_router(places.router, prefix="/api")     # [장소]
+app.include_router(login_router, prefix="/api")
+# app.include_router(plans_router, prefix="/api")
+# app.include_router(journals_router, prefix="/api")
+# app.include_router(places_router, prefix="/api")
 
 
 @app.get("/api/health")
