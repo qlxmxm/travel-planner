@@ -16,7 +16,7 @@ export default function Header() {
         </nav>
         <div className="app-header__auth">
           {isLoggedIn ? (
-            <span className="btn btn--small">{user.user_name} 님</span>
+            <Link to="/login" className="btn btn--small" title="로그인 화면으로 이동">{user.user_name} 님</Link>
           ) : (
             <>
               <Link to="/login" className="btn btn--small">로그인</Link>

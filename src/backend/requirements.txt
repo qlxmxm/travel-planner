@@ -1,0 +1,11 @@
+fastapi
+uvicorn[standard]
+sqlalchemy
+pymysql
+asyncmy
+cryptography
+bcrypt
+PyJWT
+pydantic[email]
+pydantic-settings
+python-dotenv
