@@ -15,8 +15,8 @@ class journals(Base):
     j_title: Mapped[str] =mapped_column(String(100), nullable=False)
     j_intro: Mapped[str]= mapped_column(String(100), nullable=True)
     j_photo : Mapped[str] = mapped_column(String(255), nullable=True)
-    p_create=Mapped[datetime] = mapped_column(TIMESTAMP, server_default=func.now(), nullable=False)
-    loc = Mapped[str] = mapped_column(ForeignKey("plans.loc"))
+    p_create :Mapped[datetime] = mapped_column(TIMESTAMP, server_default=func.now(), nullable=False)
+    loc : Mapped[str] = mapped_column(String(100), nullable=True)
 
 class journals_item(Base):
     __tablename__ = 'journals_item'
@@ -37,7 +37,7 @@ class journals_comment(Base):
     __tablename__ = 'journals_comment'
 
     jc_id : Mapped[int] = mapped_column(primary_key=True)
-    j_id : Mapped[int] = mapped_column(ForeignKey('journals_item.j_id'))
+    j_id : Mapped[int] = mapped_column(ForeignKey('journals.j_id'))
     u_id : Mapped[int] = mapped_column(ForeignKey("users.u_id"))
     jc_content : Mapped[str] = mapped_column(Text, nullable=False)
     jc_create : Mapped[datetime] = mapped_column(TIMESTAMP, server_default=func.now(), nullable=False)
