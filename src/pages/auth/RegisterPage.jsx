@@ -5,7 +5,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext.jsx';
 import useSubmit from '../../hooks/useSubmit.js';
 import AuthShell from './AuthShell.jsx';
-import { IconField, PasswordInput } from './AuthFields.jsx';
+import { FormError, IconField, PasswordInput } from './AuthFields.jsx';
 import PasswordStrength from './PasswordStrength.jsx';
 import { icons } from './authIcons.jsx';
 
@@ -54,7 +54,7 @@ export default function RegisterPage() {
         <IconField icon={icons.lock} label="비밀번호 확인" hint={isPasswordMismatch ? '비밀번호가 서로 달라요' : ''}>
           <PasswordInput name="u_pw2" autoComplete="new-password" value={form.passwordConfirm} onChange={handleChange('passwordConfirm')} placeholder="한 번 더 입력" />
         </IconField>
-        {error && <p className="form-error" role="alert">{error}</p>}
+        <FormError message={error} />
         <button className="btn btn--primary btn--block auth-submit" type="submit" disabled={busy}>{busy ? '가입 중…' : '가입하기'}</button>
       </form>
       <p className="auth-foot">이미 계정이 있나요? <Link to="/login">로그인</Link></p>
