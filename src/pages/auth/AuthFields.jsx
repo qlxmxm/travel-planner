@@ -2,7 +2,7 @@
 import { useState } from 'react';
 import { icons } from './authIcons.jsx';
 
-// 앞에 아이콘이 붙은 입력칸
+// 앞에 아이콘이 붙은 입력칸. hint 를 넘기면(빈 문자열도 가능) 입력칸 아래에 안내 줄 자리를 항상 잡아 둬서, 안내가 나타나도 폼 길이가 변하지 않습니다.
 export function IconField({ icon, label, hint, children }) {
   return (
     <label className="afield">
@@ -11,7 +11,7 @@ export function IconField({ icon, label, hint, children }) {
         <span className="afield__icon">{icon}</span>
         {children}
       </span>
-      {hint && <small className="afield__hint">{hint}</small>}
+      {hint !== undefined && <small className="afield__hint">{hint}</small>}
     </label>
   );
 }
@@ -27,5 +27,14 @@ export function PasswordInput(props) {
         {isVisible ? icons.eyeOff : icons.eye}
       </button>
     </>
+  );
+}
+
+// 폼 오류 메시지. 메시지가 없어도 자리를 잡아 둬서, 오류가 나타나도 폼 길이가 변하지 않습니다.
+export function FormError({ message }) {
+  return (
+    <div className="auth-error-slot">
+      {message && <p className="form-error" role="alert">{message}</p>}
+    </div>
   );
 }
