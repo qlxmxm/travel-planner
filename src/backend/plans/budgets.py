@@ -1,4 +1,4 @@
-from back.db import Base
+from backend.db import Base
 from sqlalchemy.orm import Mapped, mapped_column
 from datetime import datetime
 from sqlalchemy import String, TIMESTAMP, func, ForeignKey
@@ -14,3 +14,5 @@ class Budgets(Base):
     password: Mapped[str] =mapped_column(String(300), nullable=False)
     created_at: Mapped[Optional[datetime]]= mapped_column(TIMESTAMP, server_default=func.now(), nullable=True)
 
+
+ 

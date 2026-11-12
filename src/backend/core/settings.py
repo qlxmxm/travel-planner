@@ -1,6 +1,10 @@
 from pydantic_settings import BaseSettings
 from pydantic import Field
 from datetime import timedelta
+from pathlib import Path
+
+# .env 는 src/backend/.env (어디서 실행해도 같은 파일을 읽도록 절대 경로 사용)
+ENV_FILE = Path(__file__).resolve().parents[1] / ".env"
 
 #.env에서 DB접속정보 읽어 접속 만들어주는 설정 클래스
 class Settings(BaseSettings):
@@ -12,13 +16,13 @@ class Settings(BaseSettings):
 
     #.env에서 토큰에 서명할 때 쓸 값
     secret_key:str=Field(..., alias="SECRET_KEY")
-    jwt_algorithm:str=Field(..., alias="JWT_ALGORITHM")
+    jwt_algorithm:str=Field("HS256", alias="JWT_ALGORITHM")
     access_token_expire_second:int=Field(900, alias="ACCESS_TOKEN_EXPIRE")
     refresh_token_expire_second:int=Field(604800, alias="REFRESH_TOKEN_EXPIRE")
 
 
     class Config:  
-        env_file=".env"
+        env_file=str(ENV_FILE)
         case_sensitive=True  # 환경변수 이름 대소문자를 구분
         extra="allow"   # 모델에 정의되지 않은 추가 필드도 허용
         populate_by_name=True #필드 이름과 alias로 값을 채울 수 있음

@@ -5,9 +5,9 @@
 | 분류 | | 프론트 파일 | 샘플 데이터 | CSS | 백엔드(제안) |
 |---|---|---|---|---|---|
 | **로그인** | | `pages/auth/`, `context/AuthContext.jsx`, `components/ProtectedRoute.jsx`, `api/client.js` | - | - | `routers/auth.py` (회원가입·로그인·JWT) |
-| **여행계획** | | `pages/trips/`, `pages/schedule/`, `pages/budget/`, `pages/members/`, `pages/places/PlacesTab.jsx`, `components/common/TripCard.jsx`, `TabNav.jsx` | `data/sampleTrips.js` | `trips.css`, `schedule.css`, `budget.css`, `members.css`, `places.css` | `routers/plans.py` (여행·일정·대화·예산·멤버·초대·해시태그) |
-| **여행기** | | `pages/journals/` | `data/sampleJournals.js` | `journals.css` | `routers/journals.py` (여행기·댓글·좋아요) |
-| **장소** | | `pages/places/PlaceListPage.jsx`, `PlaceDetailPage.jsx`, `components/common/StarRating.jsx` | `data/samplePlaces.js` | `placebrowse.css` | `routers/places.py` (장소·리뷰) |
+| **여행계획** | | `pages/trips/`, `pages/schedule/`, `pages/budget/`, `pages/members/`, `pages/places/PlacesTab.jsx`, `components/common/TripCard.jsx`, `TabNav.jsx` | `data/sampleTrips.js` | `trips.css`, `schedule.css`, `budget.css`, `members.css`, `places.css` | `src/backend/plans/` (여행·일정·예산·멤버·초대·해시태그) |
+| **여행기** | | `pages/journals/` | `data/sampleJournals.js` | `journals.css` | `src/backend/journals/` (여행기·댓글) |
+| **장소** | | `pages/places/PlaceListPage.jsx`, `PlaceDetailPage.jsx`, `components/common/StarRating.jsx` | `data/samplePlaces.js` | `placebrowse.css` | `src/backend/places/` (장소·리뷰) |
 
 
 - 여행계획 → 여행기 연결: 여행계획 상세의 **[여행기에 추가]** 버튼 `/journals/new/from/:tripId` 로 이동, 여행기 쓰기 화면이 그 여행의 일정을 불러옴.
@@ -35,6 +35,9 @@
 | `/journals/:id/edit` | 여행기 수정 (작성자만) | `pages/journals/JournalWritePage.jsx` | |
 | `/places` | 장소 목록: 카테고리 탭(맛집/관광명소/숙소) + 검색(이름·카테고리·도시·주소) + 평균 별점 | `pages/places/PlaceListPage.jsx` | |
 | `/places/:id` | 장소 상세: 정보 + 평균 별점 + 리뷰 작성·수정·삭제(내 리뷰만) | `pages/places/PlaceDetailPage.jsx` | |
+
+## 백엔드 폴더
+백엔드는 `src/backend/` 아래에 역할별 폴더로 나눕니다. 구조와 실행 방법은 [`src/backend/README.md`](src/backend/README.md) 를 보세요.
 
 ## 폴더 구조
 

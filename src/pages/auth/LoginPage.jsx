@@ -4,7 +4,10 @@
 import { useState } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext.jsx';
-import { AuthShell, IconField, PasswordInput, icons } from './AuthParts.jsx';
+import useSubmit from '../../hooks/useSubmit.js';
+import AuthShell from './AuthShell.jsx';
+import { IconField, PasswordInput } from './AuthFields.jsx';
+import { icons } from './authIcons.jsx';
 
 export default function LoginPage() {
   const { login, user } = useAuth();
@@ -12,22 +15,12 @@ export default function LoginPage() {
   const { state } = useLocation();               // 회원가입 직후라면 { registered: true }
   const [email, setEmail] = useState(state?.email || '');
   const [password, setPassword] = useState('');
-  const [error, setError] = useState('');
-  const [busy, setBusy] = useState(false);
 
-  async function onSubmit(e) {
-    e.preventDefault();
-    if (!email.trim() || !password) { setError('이메일과 비밀번호를 입력해 주세요'); return; }
-    setBusy(true); setError('');
-    try {
-      await login(email.trim(), password);
-      navigate('/trips');
-    } catch (err) {
-      setError(err.message);
-    } finally {
-      setBusy(false);
-    }
-  }
+  const { busy, error, handleSubmit } = useSubmit(async () => {
+    if (!email.trim() || !password) throw new Error('이메일과 비밀번호를 입력해 주세요');
+    await login(email.trim(), password);
+    navigate('/trips');
+  });
 
   return (
     <AuthShell>
@@ -36,7 +29,7 @@ export default function LoginPage() {
       <p className="auth-sub">로그인하고 여행 계획을 이어서 만들어 보세요.</p>
       {state?.registered && <p className="form-ok">가입이 완료되었습니다. 로그인해 주세요.</p>}
       {user && <p className="auth-now">지금은 <b>{user.user_name}</b> 님으로 로그인되어 있어요. (샘플)</p>}
-      <form onSubmit={onSubmit} noValidate>
+      <form onSubmit={handleSubmit} noValidate>
         <IconField icon={icons.mail} label="이메일 (아이디)">
           <input type="email" name="u_email" autoComplete="username" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="example@email.com" />
         </IconField>
