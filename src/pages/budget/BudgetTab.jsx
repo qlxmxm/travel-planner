@@ -31,7 +31,7 @@ export default function BudgetTab() {
     setEditId(null);
   }, [trip?.trip_id]); // <- 여행 ID가 바뀌거나 페이지가 처음 로드될 때 실행됩니다.
 
-  },[form])
+
 
   if (!canEdit) return <EmptyState icon="🔒" title="멤버만 볼 수 있어요" description="예산 가계부는 이 여행의 멤버에게만 보여요." />;
 

@@ -1,0 +1,73 @@
+/* [로그인] 로그인·회원가입 화면 전용 */
+.auth-page { position: relative; padding: 8px 0 0; }
+.auth-page::before, .auth-page::after { content: ''; position: absolute; z-index: 0; border-radius: 50%; filter: blur(60px); opacity: .55; pointer-events: none; }
+.auth-page::before { width: 360px; height: 360px; left: -80px; top: -40px; background: #bdeefa; }
+.auth-page::after { width: 320px; height: 320px; right: -60px; bottom: -40px; background: #ffe3ec; }
+
+.auth-card { position: relative; z-index: 1; display: grid; grid-template-columns: 1.08fr 1fr; max-width: 1040px; min-height: 640px; margin: 0 auto; background: #fff; border-radius: 28px; overflow: hidden; box-shadow: 0 30px 80px rgba(30, 60, 90, .16), 0 2px 8px rgba(30, 60, 90, .06); }
+
+/* 왼쪽: 여행 소개 */
+.auth-visual { position: relative; color: #fff; background-size: cover; background-position: center; display: flex; flex-direction: column; justify-content: space-between; padding: 44px 40px 36px; }
+.auth-visual__shade { position: absolute; inset: 0; background: linear-gradient(165deg, rgba(8, 110, 140, .72) 0%, rgba(14, 40, 62, .55) 48%, rgba(12, 22, 36, .86) 100%); }
+.auth-visual__body, .auth-ticket { position: relative; }
+.auth-eyebrow { display: inline-flex; align-items: center; gap: 8px; padding: 7px 14px 7px 10px; border-radius: 999px; background: rgba(255, 255, 255, .16); border: 1px solid rgba(255, 255, 255, .28); backdrop-filter: blur(6px); font-size: 12px; font-weight: 800; letter-spacing: .12em; }
+.auth-eyebrow svg { width: 16px; height: 16px; }
+.auth-visual h2 { margin: 22px 0 12px; font-size: 34px; line-height: 1.28; font-weight: 800; letter-spacing: -.02em; text-shadow: 0 2px 16px rgba(0, 0, 0, .25); }
+.auth-visual p { font-size: 15px; line-height: 1.6; color: rgba(255, 255, 255, .88); }
+.auth-points { list-style: none; margin: 26px 0 0; padding: 0; display: grid; gap: 12px; }
+.auth-points li { display: flex; align-items: center; gap: 14px; }
+.auth-points li > span { flex: none; width: 42px; height: 42px; border-radius: 13px; display: grid; place-items: center; background: rgba(255, 255, 255, .18); border: 1px solid rgba(255, 255, 255, .26); backdrop-filter: blur(6px); }
+.auth-points b { display: block; font-size: 15px; font-weight: 700; }
+.auth-points small { display: block; margin-top: 2px; font-size: 13px; color: rgba(255, 255, 255, .78); }
+
+.auth-ticket { margin-top: 28px; padding: 16px 18px; border-radius: 18px; background: rgba(255, 255, 255, .94); color: var(--ink); box-shadow: 0 14px 34px rgba(0, 0, 0, .25); }
+.auth-ticket__top { display: flex; align-items: center; justify-content: space-between; margin-bottom: 10px; }
+.auth-ticket__top b { font-size: 15px; font-weight: 800; }
+.auth-ticket__top span { font-size: 12px; font-weight: 800; color: var(--accent-ink); background: var(--accent-soft); padding: 3px 9px; border-radius: 999px; }
+.auth-ticket__row { display: flex; align-items: center; gap: 10px; padding: 6px 0; font-size: 13.5px; color: var(--ink-sub); }
+.auth-ticket__row + .auth-ticket__row { border-top: 1px dashed var(--line); }
+.auth-ticket__row i { width: 10px; height: 10px; border-radius: 50%; flex: none; }
+
+/* 오른쪽: 폼 */
+.auth-form { display: flex; flex-direction: column; justify-content: center; padding: 48px 52px; }
+.auth-kicker { font-size: 12px; font-weight: 800; letter-spacing: .14em; color: var(--accent-ink); margin-bottom: 10px; }
+.auth-form h1 { font-size: 28px; font-weight: 800; letter-spacing: -.02em; line-height: 1.3; }
+.auth-sub { margin: 8px 0 26px; color: var(--ink-sub); font-size: 15px; }
+.auth-now { color: var(--ink-sub); font-size: 13.5px; margin: -14px 0 20px; padding: 9px 12px; background: var(--bg-soft); border-radius: var(--radius-s); }
+.form-ok { background: var(--accent-soft); color: var(--accent-ink); border-radius: var(--radius-m); padding: 11px 14px; font-size: 14px; font-weight: 600; margin: -10px 0 18px; }
+
+.afield { display: block; margin-bottom: 16px; }
+.afield__label { display: block; font-size: 13.5px; font-weight: 700; color: var(--ink-sub); margin-bottom: 7px; }
+.afield__box { position: relative; display: block; }
+.afield__icon { position: absolute; left: 15px; top: 50%; transform: translateY(-50%); color: var(--ink-mute); display: grid; transition: color .15s; pointer-events: none; }
+.afield__box input { width: 100%; height: 52px; padding: 0 46px 0 46px; border: 1.5px solid var(--line); border-radius: 14px; background: var(--bg-soft); font-size: 15px; transition: border-color .15s, box-shadow .15s, background .15s; }
+.afield__box input::placeholder { color: var(--ink-mute); }
+.afield__box input:focus { outline: none; background: #fff; border-color: var(--accent); box-shadow: 0 0 0 4px var(--accent-soft); }
+.afield__box:focus-within .afield__icon { color: var(--accent-ink); }
+.afield__eye { position: absolute; right: 8px; top: 50%; transform: translateY(-50%); width: 38px; height: 38px; border: 0; background: none; border-radius: 10px; color: var(--ink-mute); display: grid; place-items: center; }
+.afield__eye:hover { color: var(--ink); background: rgba(0, 0, 0, .04); }
+.afield__hint { display: block; margin-top: 6px; font-size: 13px; color: var(--danger); }
+
+.strength { display: flex; align-items: center; gap: 10px; margin: -6px 0 16px; }
+.strength__bar { display: flex; gap: 4px; flex: 1; }
+.strength__bar i { flex: 1; height: 5px; border-radius: 3px; background: var(--line); transition: background .2s; }
+.strength small { font-size: 12.5px; color: var(--ink-mute); min-width: 96px; text-align: right; }
+.strength--0 .strength__bar i:nth-child(-n+1) { background: var(--danger); }
+.strength--1 .strength__bar i:nth-child(-n+1) { background: #f5a524; }
+.strength--2 .strength__bar i:nth-child(-n+2) { background: var(--accent); }
+.strength--3 .strength__bar i { background: #2bb673; }
+
+.auth-form .form-error { margin: 0 0 14px; padding: 10px 14px; background: #fff1f1; border-radius: var(--radius-s); font-weight: 600; }
+.auth-submit { margin-top: 6px; height: 54px; font-size: 16px; font-weight: 800; background: linear-gradient(135deg, #3ccdf0, #12a8cf); border: 0; box-shadow: 0 10px 24px rgba(43, 196, 234, .38); transition: transform .15s, box-shadow .15s, filter .15s; }
+.auth-submit:hover { transform: translateY(-1px); box-shadow: 0 14px 28px rgba(43, 196, 234, .46); filter: saturate(1.05); }
+.auth-submit:active { transform: translateY(0); }
+.btn[disabled] { opacity: .6; cursor: default; transform: none; }
+.auth-foot { margin-top: 22px; text-align: center; font-size: 14px; color: var(--ink-sub); }
+.auth-foot a { color: var(--accent-ink); font-weight: 800; margin-left: 4px; }
+.auth-foot a:hover { text-decoration: underline; }
+
+@media (max-width: 900px) {
+  .auth-card { grid-template-columns: 1fr; }
+  .auth-visual { display: none; }
+  .auth-form { padding: 40px 28px; }
+}
