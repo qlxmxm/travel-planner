@@ -41,7 +41,6 @@ class JournalService:
                 j_title=custom_title if custom_title else plan.p_title,
                 j_start_date=plan.p_start_date,
                 j_end_date=plan.p_end_date,
-                j_content=""
             )
             new_journal = JournalCrud.create(db, journal_data)
 
@@ -52,7 +51,6 @@ class JournalService:
                     ji_day=p_item.pi_day,
                     ji_order=p_item.pi_order,
                     ji_place=p_item.pi_place,
-                    ji_memo=""
                 )
                 JournalItemCrud.create(db, journal_item_data)
 
