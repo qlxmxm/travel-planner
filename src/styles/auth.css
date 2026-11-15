@@ -4,7 +4,8 @@
 .auth-page::before { width: 360px; height: 360px; left: -80px; top: -40px; background: #bdeefa; }
 .auth-page::after { width: 320px; height: 320px; right: -60px; bottom: -40px; background: #ffe3ec; }
 
-.auth-card { position: relative; z-index: 1; display: grid; grid-template-columns: 1.08fr 1fr; max-width: 1040px; min-height: 640px; margin: 0 auto; background: #fff; border-radius: 28px; overflow: hidden; box-shadow: 0 30px 80px rgba(30, 60, 90, .16), 0 2px 8px rgba(30, 60, 90, .06); }
+/* 로그인↔회원가입을 오가도 카드 크기가 변하지 않게, 더 긴 회원가입 폼 높이에 맞춰 고정 */
+.auth-card { position: relative; z-index: 1; display: grid; grid-template-columns: 1.08fr 1fr; max-width: 1040px; min-height: 822px; margin: 0 auto; background: #fff; border-radius: 28px; overflow: hidden; box-shadow: 0 30px 80px rgba(30, 60, 90, .16), 0 2px 8px rgba(30, 60, 90, .06); }
 
 /* 왼쪽: 여행 소개 */
 .auth-visual { position: relative; color: #fff; background-size: cover; background-position: center; display: flex; flex-direction: column; justify-content: space-between; padding: 44px 40px 36px; }
@@ -46,17 +47,19 @@
 .afield__box:focus-within .afield__icon { color: var(--accent-ink); }
 .afield__eye { position: absolute; right: 8px; top: 50%; transform: translateY(-50%); width: 38px; height: 38px; border: 0; background: none; border-radius: 10px; color: var(--ink-mute); display: grid; place-items: center; }
 .afield__eye:hover { color: var(--ink); background: rgba(0, 0, 0, .04); }
-.afield__hint { display: block; margin-top: 6px; font-size: 13px; color: var(--danger); }
+.afield__hint { display: block; margin-top: 6px; min-height: 20px; font-size: 13px; color: var(--danger); }
 
 .strength { display: flex; align-items: center; gap: 10px; margin: -6px 0 16px; }
 .strength__bar { display: flex; gap: 4px; flex: 1; }
 .strength__bar i { flex: 1; height: 5px; border-radius: 3px; background: var(--line); transition: background .2s; }
+.strength--idle { visibility: hidden; }
 .strength small { font-size: 12.5px; color: var(--ink-mute); min-width: 96px; text-align: right; }
 .strength--0 .strength__bar i:nth-child(-n+1) { background: var(--danger); }
 .strength--1 .strength__bar i:nth-child(-n+1) { background: #f5a524; }
 .strength--2 .strength__bar i:nth-child(-n+2) { background: var(--accent); }
 .strength--3 .strength__bar i { background: #2bb673; }
 
+.auth-error-slot { min-height: 56px; }   /* 오류 문구가 나타나도 폼 길이가 변하지 않게 자리를 미리 잡아 둠 */
 .auth-form .form-error { margin: 0 0 14px; padding: 10px 14px; background: #fff1f1; border-radius: var(--radius-s); font-weight: 600; }
 .auth-submit { margin-top: 6px; height: 54px; font-size: 16px; font-weight: 800; background: linear-gradient(135deg, #3ccdf0, #12a8cf); border: 0; box-shadow: 0 10px 24px rgba(43, 196, 234, .38); transition: transform .15s, box-shadow .15s, filter .15s; }
 .auth-submit:hover { transform: translateY(-1px); box-shadow: 0 14px 28px rgba(43, 196, 234, .46); filter: saturate(1.05); }

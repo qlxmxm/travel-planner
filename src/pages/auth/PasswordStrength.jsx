@@ -13,10 +13,10 @@ export function getPasswordScore(password) {
 }
 
 export default function PasswordStrength({ value }) {
-  if (!value) return null;
   const score = getPasswordScore(value);
+  const idleClass = value ? '' : ' strength--idle';   // 입력 전에도 자리는 잡아 두고 숨김 (폼 길이가 변하지 않게)
   return (
-    <div className={`strength strength--${score}`} aria-live="polite">
+    <div className={`strength strength--${score}${idleClass}`} aria-live="polite">
       <div className="strength__bar"><i /><i /><i /></div>
       <small>{LABELS[score]}</small>
     </div>
