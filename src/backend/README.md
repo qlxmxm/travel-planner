@@ -9,8 +9,8 @@ src/backend/
   db/db.py         [공통] DB 연결 (비동기), Base, get_db
   login/           [로그인]   models(users) · schemas · security · router · seed
   plans/           [여행계획] models(plans, invite, plan_members) · budgets(작성 중)
-  journals/        [여행기]   (비어 있음)
-  places/          [장소]     (비어 있음)
+  journals/        [여행기]   crud · schema · service (router 작성 전)
+  location/        [장소]     models(location, location_reviews) · schemas
   requirements.txt, .env.example
 ```
 
