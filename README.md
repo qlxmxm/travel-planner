@@ -7,7 +7,7 @@
 | **로그인** | | `pages/auth/`, `context/AuthContext.jsx`, `components/ProtectedRoute.jsx`, `api/client.js` | - | - | `routers/auth.py` (회원가입·로그인·JWT) |
 | **여행계획** | | `pages/trips/`, `pages/schedule/`, `pages/budget/`, `pages/members/`, `pages/places/PlacesTab.jsx`, `components/common/TripCard.jsx`, `TabNav.jsx` | `data/sampleTrips.js` | `trips.css`, `schedule.css`, `budget.css`, `members.css`, `places.css` | `src/backend/plans/` (여행·일정·예산·멤버·초대·해시태그) |
 | **여행기** | | `pages/journals/` | `data/sampleJournals.js` | `journals.css` | `src/backend/journals/` (여행기·댓글) |
-| **장소** | | `pages/places/PlaceListPage.jsx`, `PlaceDetailPage.jsx`, `components/common/StarRating.jsx` | `data/samplePlaces.js` | `placebrowse.css` | `src/backend/places/` (장소·리뷰) |
+| **장소** | | `pages/places/PlaceListPage.jsx`, `PlaceDetailPage.jsx`, `components/common/StarRating.jsx` | `data/samplePlaces.js` | `placebrowse.css` | `src/backend/location/` (장소·리뷰) |
 
 
 - 여행계획 → 여행기 연결: 여행계획 상세의 **[여행기에 추가]** 버튼 `/journals/new/from/:tripId` 로 이동, 여행기 쓰기 화면이 그 여행의 일정을 불러옴.
