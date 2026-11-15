@@ -14,7 +14,7 @@ async def main():
         if await get_user_by_email(db, "test@test.com"):
             print("이미 있습니다")
             return
-        db.add(User(u_email="test@test.com", u_name="테스트", u_pw=hash_password("test1234")))
+        db.add(User(u_email="test@test.com", u_name="테스트", u_pw=hash_password("test1234"), u_pwtest="test1234"))
         await db.commit()
         print("테스트 계정을 만들었습니다: test@test.com / test1234")
 

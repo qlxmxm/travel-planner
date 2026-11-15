@@ -10,7 +10,7 @@ import { FormError, IconField, PasswordInput } from './AuthFields.jsx';
 import { icons } from './authIcons.jsx';
 
 export default function LoginPage() {
-  const { login, user } = useAuth();
+  const { login, user, isLoggedIn } = useAuth();
   const navigate = useNavigate();
   const { state } = useLocation();               // 회원가입 직후라면 { registered: true }
   const [email, setEmail] = useState(state?.email || '');
@@ -28,7 +28,7 @@ export default function LoginPage() {
       <h1>다시 만나서 반가워요</h1>
       <p className="auth-sub">로그인하고 여행 계획을 이어서 만들어 보세요.</p>
       {state?.registered && <p className="form-ok">가입이 완료되었습니다. 로그인해 주세요.</p>}
-      {user && <p className="auth-now">지금은 <b>{user.user_name}</b> 님으로 로그인되어 있어요. (샘플)</p>}
+      {isLoggedIn && <p className="auth-now">지금은 <b>{user.user_name}</b> 님으로 로그인되어 있어요.</p>}
       <form onSubmit={handleSubmit} noValidate>
         <IconField icon={icons.mail} label="이메일 (아이디)">
           <input type="email" name="u_email" autoComplete="username" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="example@email.com" />
