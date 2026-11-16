@@ -6,7 +6,7 @@ import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext.jsx';
 import useSubmit from '../../hooks/useSubmit.js';
 import AuthShell from './AuthShell.jsx';
-import { IconField, PasswordInput } from './AuthFields.jsx';
+import { FormError, IconField, PasswordInput } from './AuthFields.jsx';
 import { icons } from './authIcons.jsx';
 
 export default function LoginPage() {
@@ -36,7 +36,7 @@ export default function LoginPage() {
         <IconField icon={icons.lock} label="비밀번호">
           <PasswordInput name="u_pw" autoComplete="current-password" value={password} onChange={(e) => setPassword(e.target.value)} placeholder="비밀번호를 입력해 주세요" />
         </IconField>
-        {error && <p className="form-error" role="alert">{error}</p>}
+        <FormError message={error} />
         <button className="btn btn--primary btn--block auth-submit" type="submit" disabled={busy}>{busy ? '로그인 중…' : '로그인'}</button>
       </form>
       <p className="auth-foot">아직 계정이 없나요? <Link to="/register">회원가입</Link></p>
