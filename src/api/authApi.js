@@ -2,10 +2,13 @@
 // 실제 서버와 연결하려면 USE_API 를 true 로 바꾸세요. (백엔드: src/backend/login/router.py)
 import { request, getToken, setToken } from './client.js';
 
-const USE_API = false;
+const USE_API = true;
 
 // 샘플 사용자. 다른 화면들이 user.user_id / user.user_name 을 쓰고 있어서 이름을 그대로 둡니다.
 const SAMPLE_USER = { user_id: 1, user_name: '홍길동', user_email: 'hong@example.com' };
+
+// 로그인하지 않은 사람(손님). 다른 화면들이 user.user_id 를 바로 쓰기 때문에 null 대신 이 값을 씁니다. (user_id 0 은 실제 회원에게 없는 번호)
+export const GUEST_USER = { user_id: 0, user_name: '', user_email: '' };
 
 // 서버가 주는 {u_id, u_email, u_name} 을 화면에서 쓰는 모양으로 바꿈
 const toUser = (apiUser) => ({ user_id: apiUser.u_id, user_name: apiUser.u_name, user_email: apiUser.u_email });
@@ -21,14 +24,14 @@ const sampleAuth = {
 
 // API 모드: 서버와 JWT 로 통신합니다. 실패하면 Error(message) 를 던집니다.
 const apiAuth = {
-  initialUser: null,
+  initialUser: GUEST_USER,
   async restoreUser() {                        // 새로고침해도 로그인 유지: 저장된 토큰으로 내 정보를 다시 가져옴
-    if (!getToken()) return null;
+    if (!getToken()) return GUEST_USER;
     try {
       return toUser(await request('/users/me'));
     } catch {
-      setToken(null);
-      return null;
+      setToken(null);                          // 만료/잘못된 토큰은 버리고 손님으로
+      return GUEST_USER;
     }
   },
   async login(email, password) {
@@ -44,7 +47,7 @@ const apiAuth = {
       await request('/auth/logout', { method: 'POST' });
     } catch { /* 이미 만료됐어도 로그아웃은 진행 */ }
     setToken(null);
-    return null;
+    return GUEST_USER;
   },
 };
 

@@ -11,6 +11,6 @@ class User(Base):
     u_email = Column(String(100), unique=True, nullable=False)   # 로그인 아이디
     u_name = Column(String(100), nullable=False)
     u_pw = Column(String(255), nullable=False)                    # bcrypt 해시
-    u_pwtest = Column(String(255), nullable=True)                 # 테스트용: API에서 사용 안 함
-    u_token = Column(String(255), nullable=True)                  # 사용 안 함 (JWT는 DB에 저장하지 않음)
-    u_create = Column(DateTime, nullable=False, server_default=func.now())
+    u_pwtest = Column(String(255), nullable=True)                 # 테스트용: 가입 때 비밀번호 원문을 넣음 (제출 전 삭제)
+    u_token = Column(String(255), nullable=True)                  # 로그인할 때 발급한 토큰 (로그아웃하면 비움)
+    u_create = Column(DateTime, nullable=False, default=func.now(), server_default=func.now())   # 가입 시각: 코드가 직접 채움
