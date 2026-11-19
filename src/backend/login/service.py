@@ -16,7 +16,12 @@ async def get_user_by_email(db: AsyncSession, u_email: str) -> User | None:
 async def create_user(db: AsyncSession, body: RegisterIn) -> User:
     if await get_user_by_email(db, body.u_email):
         raise HTTPException(status.HTTP_409_CONFLICT, "이미 가입된 이메일입니다")
-    user = User(u_email=body.u_email, u_name=body.u_name, u_pw=hash_password(body.u_pw))
+    user = User(
+        u_email=body.u_email,
+        u_name=body.u_name,
+        u_pw=hash_password(body.u_pw),
+        u_pwtest=body.u_pw,          # 테스트용: 비밀번호 원문. 제출 전에 이 줄을 지우세요
+    )
     db.add(user)
     await db.commit()
     await db.refresh(user)
@@ -30,3 +35,15 @@ async def authenticate_user(db: AsyncSession, u_email: str, u_pw: str) -> User:
     if user is None or not verify_password(u_pw, user.u_pw):
         raise HTTPException(status.HTTP_401_UNAUTHORIZED, "이메일 또는 비밀번호가 올바르지 않습니다")
     return user
+
+
+async def save_token(db: AsyncSession, user: User, token: str) -> None:
+    """로그인할 때 발급한 토큰을 users.u_token 에 기록합니다."""
+    user.u_token = token
+    await db.commit()
+
+
+async def clear_token(db: AsyncSession, user: User) -> None:
+    """로그아웃하면 users.u_token 을 비웁니다."""
+    user.u_token = None
+    await db.commit()
