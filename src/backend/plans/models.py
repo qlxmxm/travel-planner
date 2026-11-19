@@ -47,15 +47,15 @@ class plan_hashtag(Base):
     __tablename__ = 'plan_hashtag'
 
     ph_id : Mapped[int] = mapped_column(primary_key=True)
-    p_id : Mapped[int] = mapped_column(ForeignKey('plan.p_id'))
+    p_id : Mapped[int] = mapped_column(ForeignKey('plans.p_id'))
     h_id : Mapped[int] = mapped_column(nullable=False)
 
 class plan_details(Base):
     __tablename__ = 'plan_details'
 
     pd_id : Mapped[int] = mapped_column(primary_key=True)
-    p_id : Mapped[int] = mapped_column(ForeignKey('plan.p_id'))
-    l_id : Mapped[int] = mapped_column(ForeignKey=('location.l_id'))
-    visit_time : Mapped[datetime] = mapped_column(datetime, nullable=False)
+    p_id : Mapped[int] = mapped_column(ForeignKey('plans.p_id'))
+    l_id : Mapped[Optional[int]] = mapped_column(ForeignKey('location.l_id'), nullable=True)
+    visit_time : Mapped[datetime] = mapped_column(TIMESTAMP, nullable=False)
     orders : Mapped[int] = mapped_column(nullable=False)
     memo : Mapped[str] = mapped_column(String(100), nullable=True)

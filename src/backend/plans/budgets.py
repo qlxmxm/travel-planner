@@ -9,7 +9,7 @@ class Budgets(Base):
     __tablename__="budgets"
 
     b_id: Mapped[int] = mapped_column(primary_key=True, index=True) 
-    p_id: Mapped[str] =mapped_column(ForeignKey('plans.p_id'), nullable=False)
+    p_id: Mapped[int] =mapped_column(ForeignKey('plans.p_id'), nullable=False)
     b_budget: Mapped[int] =mapped_column(nullable=False)
     b_date: Mapped[datetime] =mapped_column(TIMESTAMP, server_default=func.now(), nullable=False)
     b_add: Mapped[int]= mapped_column(nullable=True)
