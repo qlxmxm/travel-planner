@@ -1,5 +1,6 @@
-from sqlalchemy.orm import Session
-from typing import List, Optional
+
+from sqlalchemy import select, delete
+from sqlalchemy.ext.asyncio import AsyncSession
 
 from backend.journals import journals, journals_item, journals_comment
 from backend.journals.schema import (
@@ -7,139 +8,264 @@ from backend.journals.schema import (
     JournalItemCreate, JournalItemUpdate,
     JournalCommentCreate, JournalCommentUpdate
 )
+from backend.plans.models import Plans, PlanMembers, plan_details
+from backend.location.models import Location
 
 
-class JournalCrud:
+# ==================================================
+# 1. 여행계획 조회 CRUD
+# ==================================================
+class JournalPlanCrud:
+
     @staticmethod
-    def create(db: Session, journal: JournalCreate) -> journals:
+    async def get_plan(db: AsyncSession, p_id: int):
+        return await db.get(Plans, p_id)
+
+    @staticmethod
+    async def get_member(db: AsyncSession, p_id: int, u_id: int):
+        result = await db.execute(
+            select(PlanMembers).where(
+                PlanMembers.p_id == p_id,
+                PlanMembers.u_id == u_id
+            )
+        )
+        return result.scalars().first()
+
+    @staticmethod
+    async def get_plan_details(db: AsyncSession, p_id: int):
+        result = await db.execute(
+            select(plan_details, Location.l_name)
+            .join(Location, plan_details.l_id == Location.l_id)
+            .where(plan_details.p_id == p_id)
+            .order_by(
+                plan_details.visit_time,
+                plan_details.orders,
+                plan_details.pd_id
+            )
+        )
+        return result.all()
+
+
+# ==================================================
+# 2. 여행기 CRUD
+# ==================================================
+class JournalCrud:
+
+    @staticmethod
+    async def create(db: AsyncSession, journal: JournalCreate):
         db_journal = journals(**journal.model_dump())
         db.add(db_journal)
-        db.flush()
+        await db.flush()
         return db_journal
 
     @staticmethod
-    def get(db: Session, j_id: int) -> Optional[journals]:
-        return db.query(journals).filter(journals.j_id == j_id).first()
+    async def get(db: AsyncSession, j_id: int):
+        return await db.get(journals, j_id)
 
     @staticmethod
-    def get_list(db: Session, skip: int = 0, limit: int = 100) -> List[journals]:
-        return db.query(journals).offset(skip).limit(limit).all()
+    async def get_list(db: AsyncSession, skip: int = 0, limit: int = 100):
+        result = await db.execute(
+            select(journals)
+            .order_by(journals.j_id.desc())
+            .offset(skip)
+            .limit(limit)
+        )
+        return result.scalars().all()
 
     @staticmethod
-    def update(db: Session, j_id: int, journal_update: JournalUpdate) -> Optional[journals]:
-        db_journal = JournalCrud.get(db, j_id)
-        if not db_journal:
+    async def get_by_user(db: AsyncSession, u_id: int):
+        result = await db.execute(
+            select(journals)
+            .where(journals.u_id == u_id)
+            .order_by(journals.j_id.desc())
+        )
+        return result.scalars().all()
+
+    @staticmethod
+    async def get_by_plan(db: AsyncSession, p_id: int):
+        result = await db.execute(
+            select(journals)
+            .where(journals.p_id == p_id)
+            .order_by(journals.j_id.desc())
+        )
+        return result.scalars().all()
+
+    @staticmethod
+    async def update(
+        db: AsyncSession,
+        j_id: int,
+        journal_update: JournalUpdate
+    ):
+        db_journal = await JournalCrud.get(db, j_id)
+        if db_journal is None:
             return None
 
         update_data = journal_update.model_dump(exclude_unset=True)
-        for key, value in update_data.items():
-            setattr(db_journal, key, value)
 
-        db.flush()
+        for field in ("j_title", "j_intro", "j_photo"):
+            if field in update_data:
+                setattr(db_journal, field, update_data[field])
+
+        await db.flush()
         return db_journal
 
     @staticmethod
-    def delete(db: Session, j_id: int) -> bool:
-        db_journal = JournalCrud.get(db, j_id)
-        if not db_journal:
+    async def delete(db: AsyncSession, j_id: int):
+        db_journal = await JournalCrud.get(db, j_id)
+        if db_journal is None:
             return False
 
-        db.delete(db_journal)
-        db.flush()
+        await db.delete(db_journal)
+        await db.flush()
         return True
 
 
-# ==========================================
-# 2. JournalItem (일지 세부 일정) CRUD 클래스
-# ==========================================
+# ==================================================
+# 3. 여행기 세부 일정 CRUD
+# ==================================================
 class JournalItemCrud:
+
     @staticmethod
-    def create(db: Session, item: JournalItemCreate) -> journals_item:
+    async def create(db: AsyncSession, item: JournalItemCreate):
         db_item = journals_item(**item.model_dump())
         db.add(db_item)
-        db.flush()
+        await db.flush()
         return db_item
 
     @staticmethod
-    def get(db: Session, ji_id: int) -> Optional[journals_item]:
-        return db.query(journals_item).filter(journals_item.ji_id == ji_id).first()
+    async def create_many(
+        db: AsyncSession,
+        items: list[JournalItemCreate]
+    ):
+        db_items = [
+            journals_item(**item.model_dump())
+            for item in items
+        ]
+
+        db.add_all(db_items)
+        await db.flush()
+        return db_items
 
     @staticmethod
-    def get_by_journal(db: Session, j_id: int) -> List[journals_item]:
-        return (
-            db.query(journals_item)
-            .filter(journals_item.j_id == j_id)
-            .order_by(journals_item.ji_day.asc(), journals_item.ji_order.asc())
-            .all()
+    async def get(db: AsyncSession, ji_id: int):
+        return await db.get(journals_item, ji_id)
+
+    @staticmethod
+    async def get_by_journal(db: AsyncSession, j_id: int):
+        result = await db.execute(
+            select(journals_item)
+            .where(journals_item.j_id == j_id)
+            .order_by(
+                journals_item.ji_day,
+                journals_item.ji_order,
+                journals_item.ji_id
+            )
         )
+        return result.scalars().all()
 
     @staticmethod
-    def update(db: Session, ji_id: int, item_update: JournalItemUpdate) -> Optional[journals_item]:
-        db_item = JournalItemCrud.get(db, ji_id)
-        if not db_item:
+    async def update(
+        db: AsyncSession,
+        ji_id: int,
+        item_update: JournalItemUpdate
+    ):
+        db_item = await JournalItemCrud.get(db, ji_id)
+        if db_item is None:
             return None
 
         update_data = item_update.model_dump(exclude_unset=True)
-        for key, value in update_data.items():
-            setattr(db_item, key, value)
 
-        db.flush()
+        for field in ("ji_content", "ji_photo", "ji_rating"):
+            if field in update_data:
+                setattr(db_item, field, update_data[field])
+
+        await db.flush()
         return db_item
 
     @staticmethod
-    def delete(db: Session, ji_id: int) -> bool:
-        db_item = JournalItemCrud.get(db, ji_id)
-        if not db_item:
+    async def delete(db: AsyncSession, ji_id: int):
+        db_item = await JournalItemCrud.get(db, ji_id)
+        if db_item is None:
             return False
 
-        db.delete(db_item)
-        db.flush()
+        await db.delete(db_item)
+        await db.flush()
         return True
 
-
-# ==========================================
-# 3. JournalComment (일지 댓글) CRUD 클래스
-# ==========================================
-class JournalCommentCrud:
     @staticmethod
-    def create(db: Session, comment: JournalCommentCreate) -> journals_comment:
+    async def delete_by_journal(db: AsyncSession, j_id: int):
+        result = await db.execute(
+            delete(journals_item)
+            .where(journals_item.j_id == j_id)
+        )
+        await db.flush()
+        return result.rowcount
+
+
+# ==================================================
+# 4. 여행기 댓글 CRUD
+# ==================================================
+class JournalCommentCrud:
+
+    @staticmethod
+    async def create(
+        db: AsyncSession,
+        comment: JournalCommentCreate
+    ):
         db_comment = journals_comment(**comment.model_dump())
         db.add(db_comment)
-        db.flush()
+        await db.flush()
         return db_comment
 
     @staticmethod
-    def get(db: Session, jc_id: int) -> Optional[journals_comment]:
-        return db.query(journals_comment).filter(journals_comment.jc_id == jc_id).first()
+    async def get(db: AsyncSession, jc_id: int):
+        return await db.get(journals_comment, jc_id)
 
     @staticmethod
-    def get_by_journal(db: Session, j_id: int) -> List[journals_comment]:
-        return (
-            db.query(journals_comment)
-            .filter(journals_comment.j_id == j_id)
-            .order_by(journals_comment.jc_create.asc())
-            .all()
+    async def get_by_journal(db: AsyncSession, j_id: int):
+        result = await db.execute(
+            select(journals_comment)
+            .where(journals_comment.j_id == j_id)
+            .order_by(
+                journals_comment.jc_create,
+                journals_comment.jc_id
+            )
         )
+        return result.scalars().all()
 
     @staticmethod
-    def update(db: Session, jc_id: int, comment_update: JournalCommentUpdate) -> Optional[journals_comment]:
-        db_comment = JournalCommentCrud.get(db, jc_id)
-        if not db_comment:
+    async def update(
+        db: AsyncSession,
+        jc_id: int,
+        comment_update: JournalCommentUpdate
+    ):
+        db_comment = await JournalCommentCrud.get(db, jc_id)
+        if db_comment is None:
             return None
 
         update_data = comment_update.model_dump(exclude_unset=True)
-        for key, value in update_data.items():
-            setattr(db_comment, key, value)
 
-        db.flush()
+        if "jc_content" in update_data:
+            db_comment.jc_content = update_data["jc_content"]
+
+        await db.flush()
         return db_comment
 
     @staticmethod
-    def delete(db: Session, jc_id: int) -> bool:
-        db_comment = JournalCommentCrud.get(db, jc_id)
-        if not db_comment:
+    async def delete(db: AsyncSession, jc_id: int):
+        db_comment = await JournalCommentCrud.get(db, jc_id)
+        if db_comment is None:
             return False
 
-        db.delete(db_comment)
-        db.flush()
+        await db.delete(db_comment)
+        await db.flush()
         return True
+
+    @staticmethod
+    async def delete_by_journal(db: AsyncSession, j_id: int):
+        result = await db.execute(
+            delete(journals_comment)
+            .where(journals_comment.j_id == j_id)
+        )
+        await db.flush()
+        return result.rowcount
