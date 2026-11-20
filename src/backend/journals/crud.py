@@ -1,12 +1,23 @@
 
-from sqlalchemy import select, delete
+from sqlalchemy import select, delete, func
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from backend.journals import journals, journals_item, journals_comment
+from backend.journals import (
+    journals,
+    journals_item,
+    journals_comment,
+    journals_like,
+    journals_hashtag
+)
 from backend.journals.schema import (
-    JournalCreate, JournalUpdate,
-    JournalItemCreate, JournalItemUpdate,
-    JournalCommentCreate, JournalCommentUpdate
+    JournalCreate,
+    JournalUpdate,
+    JournalItemCreate,
+    JournalItemUpdate,
+    JournalCommentCreate,
+    JournalCommentUpdate,
+    JournalLikeCreate,
+    JournalHashtagCreate
 )
 from backend.plans.models import Plans, PlanMembers, plan_details
 from backend.location.models import Location
@@ -15,6 +26,7 @@ from backend.location.models import Location
 # ==================================================
 # 1. 여행계획 조회 CRUD
 # ==================================================
+
 class JournalPlanCrud:
 
     @staticmethod
@@ -33,9 +45,13 @@ class JournalPlanCrud:
 
     @staticmethod
     async def get_plan_details(db: AsyncSession, p_id: int):
+        """
+        원본 여행계획 일정 조회.
+        장소가 연결되지 않은 일정도 누락하지 않음.
+        """
         result = await db.execute(
             select(plan_details, Location.l_name)
-            .join(Location, plan_details.l_id == Location.l_id)
+            .outerjoin(Location, plan_details.l_id == Location.l_id)
             .where(plan_details.p_id == p_id)
             .order_by(
                 plan_details.visit_time,
@@ -47,8 +63,9 @@ class JournalPlanCrud:
 
 
 # ==================================================
-# 2. 여행기 CRUD
+# 2. 여행기 CRUD (journals)
 # ==================================================
+
 class JournalCrud:
 
     @staticmethod
@@ -63,7 +80,11 @@ class JournalCrud:
         return await db.get(journals, j_id)
 
     @staticmethod
-    async def get_list(db: AsyncSession, skip: int = 0, limit: int = 100):
+    async def get_list(
+        db: AsyncSession,
+        skip: int = 0,
+        limit: int = 100
+    ):
         result = await db.execute(
             select(journals)
             .order_by(journals.j_id.desc())
@@ -121,8 +142,9 @@ class JournalCrud:
 
 
 # ==================================================
-# 3. 여행기 세부 일정 CRUD
+# 3. 여행기 일정 CRUD (journals_item)
 # ==================================================
+
 class JournalItemCrud:
 
     @staticmethod
@@ -203,8 +225,9 @@ class JournalItemCrud:
 
 
 # ==================================================
-# 4. 여행기 댓글 CRUD
+# 4. 여행기 댓글 CRUD (journals_comment)
 # ==================================================
+
 class JournalCommentCrud:
 
     @staticmethod
@@ -266,6 +289,133 @@ class JournalCommentCrud:
         result = await db.execute(
             delete(journals_comment)
             .where(journals_comment.j_id == j_id)
+        )
+        await db.flush()
+        return result.rowcount
+
+
+# ==================================================
+# 5. 여행기 좋아요 CRUD (journals_like)
+# ==================================================
+
+class JournalLikeCrud:
+
+    @staticmethod
+    async def create(db: AsyncSession, like: JournalLikeCreate):
+        db_like = journals_like(**like.model_dump())
+        db.add(db_like)
+        await db.flush()
+        return db_like
+
+    @staticmethod
+    async def get(db: AsyncSession, j_id: int, u_id: int):
+        return await db.get(journals_like, (j_id, u_id))
+
+    @staticmethod
+    async def get_by_journal(db: AsyncSession, j_id: int):
+        result = await db.execute(
+            select(journals_like)
+            .where(journals_like.j_id == j_id)
+            .order_by(journals_like.jl_create.desc())
+        )
+        return result.scalars().all()
+
+    @staticmethod
+    async def get_by_user(db: AsyncSession, u_id: int):
+        result = await db.execute(
+            select(journals_like)
+            .where(journals_like.u_id == u_id)
+            .order_by(journals_like.jl_create.desc())
+        )
+        return result.scalars().all()
+
+    @staticmethod
+    async def count_by_journal(db: AsyncSession, j_id: int):
+        result = await db.execute(
+            select(func.count())
+            .select_from(journals_like)
+            .where(journals_like.j_id == j_id)
+        )
+        return result.scalar_one()
+
+    @staticmethod
+    async def delete(db: AsyncSession, j_id: int, u_id: int):
+        db_like = await JournalLikeCrud.get(db, j_id, u_id)
+        if db_like is None:
+            return False
+
+        await db.delete(db_like)
+        await db.flush()
+        return True
+
+    @staticmethod
+    async def delete_by_journal(db: AsyncSession, j_id: int):
+        result = await db.execute(
+            delete(journals_like)
+            .where(journals_like.j_id == j_id)
+        )
+        await db.flush()
+        return result.rowcount
+
+
+# ==================================================
+# 6. 여행기 해시태그 CRUD (journals_hashtag)
+# ==================================================
+
+class JournalHashtagCrud:
+
+    @staticmethod
+    async def create(
+        db: AsyncSession,
+        hashtag: JournalHashtagCreate
+    ):
+        db_hashtag = journals_hashtag(**hashtag.model_dump())
+        db.add(db_hashtag)
+        await db.flush()
+        return db_hashtag
+
+    @staticmethod
+    async def create_many(
+        db: AsyncSession,
+        hashtags: list[JournalHashtagCreate]
+    ):
+        db_hashtags = [
+            journals_hashtag(**hashtag.model_dump())
+            for hashtag in hashtags
+        ]
+
+        db.add_all(db_hashtags)
+        await db.flush()
+        return db_hashtags
+
+    @staticmethod
+    async def get(db: AsyncSession, j_id: int, h_id: int):
+        return await db.get(journals_hashtag, (j_id, h_id))
+
+    @staticmethod
+    async def get_by_journal(db: AsyncSession, j_id: int):
+        result = await db.execute(
+            select(journals_hashtag)
+            .where(journals_hashtag.j_id == j_id)
+            .order_by(journals_hashtag.h_id)
+        )
+        return result.scalars().all()
+
+    @staticmethod
+    async def delete(db: AsyncSession, j_id: int, h_id: int):
+        db_hashtag = await JournalHashtagCrud.get(db, j_id, h_id)
+        if db_hashtag is None:
+            return False
+
+        await db.delete(db_hashtag)
+        await db.flush()
+        return True
+
+    @staticmethod
+    async def delete_by_journal(db: AsyncSession, j_id: int):
+        result = await db.execute(
+            delete(journals_hashtag)
+            .where(journals_hashtag.j_id == j_id)
         )
         await db.flush()
         return result.rowcount

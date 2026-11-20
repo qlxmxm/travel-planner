@@ -10,8 +10,8 @@ from pydantic import BaseModel, ConfigDict, Field
 # ==================================================
 
 class JournalCreate(BaseModel):
-    """CRUD에서 여행기 DB 레코드를 생성할 때 사용"""
-    p_id: Optional[int] = None   # 계획이 지워져도 여행기는 남음 (NULL 허용)
+    """CRUD에서 여행기 DB 레코드 생성"""
+    p_id: Optional[int] = None
     u_id: int
     j_title: str = Field(..., min_length=1, max_length=100)
     j_intro: Optional[str] = Field(None, max_length=100)
@@ -20,13 +20,14 @@ class JournalCreate(BaseModel):
 
 
 class JournalUpdate(BaseModel):
-    """여행기 기본 정보 수정 요청"""
+    """여행기 기본 정보 수정"""
     j_title: Optional[str] = Field(None, min_length=1, max_length=100)
     j_intro: Optional[str] = Field(None, max_length=100)
     j_photo: Optional[str] = Field(None, max_length=255)
 
 
 class JournalResponse(BaseModel):
+    """여행기 조회 응답"""
     j_id: int
     p_id: Optional[int] = None
     u_id: int
@@ -40,11 +41,11 @@ class JournalResponse(BaseModel):
 
 
 # ==================================================
-# 2. 여행기 세부 일정 (journals_item)
+# 2. 여행기 일정 (journals_item)
 # ==================================================
 
 class JournalItemCreate(BaseModel):
-    """CRUD에서 원본 여행계획을 복사해 일정 생성"""
+    """원본 여행계획의 일정 복사 및 저장"""
     j_id: int
     ji_day: int = Field(1, ge=1)
     ji_order: int = Field(0, ge=0)
@@ -56,13 +57,14 @@ class JournalItemCreate(BaseModel):
 
 
 class JournalItemUpdate(BaseModel):
-    """사용자가 수정할 수 있는 세부 일정 필드"""
+    """사용자가 변경할 수 있는 여행기 일정 정보"""
     ji_content: Optional[str] = None
     ji_photo: Optional[str] = Field(None, max_length=255)
     ji_rating: Optional[int] = Field(None, ge=1, le=5)
 
 
 class JournalItemResponse(BaseModel):
+    """DB 일정 조회 응답"""
     ji_id: int
     j_id: int
     ji_day: int
@@ -81,22 +83,24 @@ class JournalItemResponse(BaseModel):
 # ==================================================
 
 class JournalCommentCreate(BaseModel):
-    """CRUD에서 댓글 생성 시 사용"""
+    """CRUD에서 댓글 생성"""
     j_id: int
     u_id: int
     jc_content: str = Field(..., min_length=1)
 
 
 class JournalCommentRequest(BaseModel):
-    """Axios 댓글 작성 요청: 사용자와 여행기 ID는 서버에서 결정"""
+    """프론트엔드 댓글 작성 요청"""
     jc_content: str = Field(..., min_length=1)
 
 
 class JournalCommentUpdate(BaseModel):
+    """댓글 수정"""
     jc_content: str = Field(..., min_length=1)
 
 
 class JournalCommentResponse(BaseModel):
+    """댓글 조회 응답"""
     jc_id: int
     j_id: int
     u_id: int
@@ -107,28 +111,11 @@ class JournalCommentResponse(BaseModel):
 
 
 # ==================================================
-# 4. 여행계획 → 여행기 작성 화면 미리보기
+# 4. 여행계획 → 여행기 작성 미리보기
 # ==================================================
 
-class JournalPlanItemPreview(BaseModel):
-    """plan_details + location에서 가져온 원본 일정"""
-    pd_id: int
-    ji_day: int
-    ji_order: int
-    ji_time: datetime
-    ji_title: str
-    ji_content: Optional[str] = None
-    ji_photo: Optional[str] = None
-    ji_rating: Optional[int] = None
-
-
-class JournalPlanDayPreview(BaseModel):
-    ji_day: int
-    date: str
-    items: list[JournalPlanItemPreview]
-
-
 class JournalPlanPreviewInfo(BaseModel):
+    """여행계획에서 가져온 여행기 기본 정보"""
     p_id: int
     j_title: str
     j_intro: Optional[str] = None
@@ -136,17 +123,37 @@ class JournalPlanPreviewInfo(BaseModel):
     loc: Optional[str] = None
 
 
+class JournalPlanItemPreview(BaseModel):
+    """작성 화면에 표시할 원본 여행 일정"""
+    pd_id: int
+    ji_day: int = Field(..., ge=1)
+    ji_order: int = Field(..., ge=0)
+    ji_time: str
+    ji_title: str
+    ji_content: str = ""
+    ji_photo: str = ""
+    ji_rating: Optional[int] = Field(None, ge=1, le=5)
+
+
+class JournalPlanDayPreview(BaseModel):
+    """작성 화면의 날짜별 일정"""
+    ji_day: int = Field(..., ge=1)
+    date: str
+    items: list[JournalPlanItemPreview]
+
+
 class JournalPlanPreviewResponse(BaseModel):
+    """여행계획 → 여행기 작성 화면 응답"""
     journal: JournalPlanPreviewInfo
     days: list[JournalPlanDayPreview]
 
 
 # ==================================================
-# 5. 여행계획을 복사하여 여행기 생성
+# 5. 여행계획 → 여행기 생성 요청
 # ==================================================
 
 class JournalFromPlanItemCreate(BaseModel):
-    """원본 일정 ID와 사용자가 입력한 여행 기록"""
+    """원본 일정 ID 및 사용자가 입력한 기록"""
     pd_id: int
     ji_content: Optional[str] = None
     ji_photo: Optional[str] = Field(None, max_length=255)
@@ -155,11 +162,11 @@ class JournalFromPlanItemCreate(BaseModel):
 
 class JournalFromPlanCreate(BaseModel):
     """
-    Axios 여행기 생성 요청
+    여행기 생성 요청
 
-    p_id: 라우터 경로에서 전달
-    u_id: JWT 인증에서 전달
-    날짜/시간/장소: 원본 여행계획에서 복사
+    p_id: URL의 plan_id에서 가져옴
+    u_id: 로그인한 사용자 정보에서 가져옴
+    일정 날짜, 시간, 장소: 서버에서 원본 복사
     """
     j_title: str = Field(..., min_length=1, max_length=100)
     j_intro: Optional[str] = Field(None, max_length=100)
@@ -168,52 +175,81 @@ class JournalFromPlanCreate(BaseModel):
 
 
 # ==================================================
-# 6. 여행기 전체 수정
+# 6. 여행기 전체 수정 요청
 # ==================================================
 
 class JournalItemFullUpdate(JournalItemUpdate):
-    """기존 여행기 일정의 고유 ID"""
+    """수정할 여행기 일정 식별"""
     ji_id: int
 
 
 class JournalFullUpdate(JournalUpdate):
     """
-    여행기 기본 정보와 세부 일정 일괄 수정
+    여행기 기본 정보 및 일정 일괄 수정
 
-    items가 없으면 기본 정보만 수정
-    items가 있으면 전달한 일정들을 수정
+    items 미전달: 기본 정보만 수정
+    items 전달: 기존 일정 전체 수정
     """
     items: Optional[list[JournalItemFullUpdate]] = None
 
 
 # ==================================================
-# 7. 여행기 상세 조회
+# 7. 프론트엔드 화면용 일정 응답
+# ==================================================
+
+class JournalDisplayItemResponse(BaseModel):
+    """React 화면에 표시할 여행기 일정"""
+    ji_id: int
+    j_id: int
+    ji_day: int = Field(..., ge=1)
+    ji_order: int = Field(..., ge=0)
+    ji_time: str
+    ji_title: str
+    ji_content: str = ""
+    ji_photo: str = ""
+    ji_rating: Optional[int] = Field(None, ge=1, le=5)
+
+
+class JournalDayResponse(BaseModel):
+    """날짜별 여행기 일정"""
+    ji_day: int = Field(..., ge=1)
+    date: Optional[str] = None
+    items: list[JournalDisplayItemResponse]
+
+
+# ==================================================
+# 8. 여행기 수정 화면 응답
+# ==================================================
+
+class JournalEditResponse(BaseModel):
+    """여행기 수정 화면: { journal, days }"""
+    journal: JournalResponse
+    days: list[JournalDayResponse]
+
+
+# ==================================================
+# 9. 여행기 상세 및 저장 결과 응답
 # ==================================================
 
 class JournalDetailResponse(BaseModel):
+    """여행기 상세: { journal, days, comments }"""
     journal: JournalResponse
-    items: list[JournalItemResponse]
+    days: list[JournalDayResponse]
     comments: list[JournalCommentResponse]
 
 
 # ==================================================
-# 8. 공통 응답
-# ==================================================
-
-class JournalMessageResponse(BaseModel):
-    message: str
-
-
-# ==================================================
-# 좋아요 (journals_like)
+# 10. 여행기 좋아요 (journals_like)
 # ==================================================
 
 class JournalLikeCreate(BaseModel):
+    """좋아요 추가"""
     j_id: int
     u_id: int
 
 
 class JournalLikeResponse(BaseModel):
+    """좋아요 조회"""
     j_id: int
     u_id: int
     jl_create: datetime
@@ -222,16 +258,26 @@ class JournalLikeResponse(BaseModel):
 
 
 # ==================================================
-# 해시태그 (journals_hashtag)
+# 11. 여행기 해시태그 (journals_hashtag)
 # ==================================================
 
 class JournalHashtagCreate(BaseModel):
+    """여행기에 해시태그 연결"""
     j_id: int
     h_id: int
 
 
 class JournalHashtagResponse(BaseModel):
+    """여행기 해시태그 조회"""
     j_id: int
     h_id: int
 
     model_config = ConfigDict(from_attributes=True)
+
+
+# ==================================================
+# 12. 공통 응답
+# ==================================================
+
+class JournalMessageResponse(BaseModel):
+    message: str
