@@ -11,7 +11,7 @@ from pydantic import BaseModel, ConfigDict, Field
 
 class JournalCreate(BaseModel):
     """CRUD에서 여행기 DB 레코드를 생성할 때 사용"""
-    p_id: int
+    p_id: Optional[int] = None   # 계획이 지워져도 여행기는 남음 (NULL 허용)
     u_id: int
     j_title: str = Field(..., min_length=1, max_length=100)
     j_intro: Optional[str] = Field(None, max_length=100)
@@ -28,7 +28,7 @@ class JournalUpdate(BaseModel):
 
 class JournalResponse(BaseModel):
     j_id: int
-    p_id: int
+    p_id: Optional[int] = None
     u_id: int
     j_title: str
     j_intro: Optional[str] = None
@@ -46,13 +46,13 @@ class JournalResponse(BaseModel):
 class JournalItemCreate(BaseModel):
     """CRUD에서 원본 여행계획을 복사해 일정 생성"""
     j_id: int
-    ji_day: int = Field(..., ge=1)
-    ji_order: int = Field(..., ge=0)
+    ji_day: int = Field(1, ge=1)
+    ji_order: int = Field(0, ge=0)
     ji_time: Optional[datetime] = None
     ji_title: str = Field(..., min_length=1, max_length=100)
     ji_content: Optional[str] = None
     ji_photo: Optional[str] = Field(None, max_length=255)
-    ji_rating: int = Field(..., ge=1, le=5)
+    ji_rating: Optional[int] = Field(None, ge=1, le=5)
 
 
 class JournalItemUpdate(BaseModel):
@@ -71,7 +71,7 @@ class JournalItemResponse(BaseModel):
     ji_title: str
     ji_content: Optional[str] = None
     ji_photo: Optional[str] = None
-    ji_rating: int
+    ji_rating: Optional[int] = None
 
     model_config = ConfigDict(from_attributes=True)
 
@@ -150,7 +150,7 @@ class JournalFromPlanItemCreate(BaseModel):
     pd_id: int
     ji_content: Optional[str] = None
     ji_photo: Optional[str] = Field(None, max_length=255)
-    ji_rating: int = Field(..., ge=1, le=5)
+    ji_rating: Optional[int] = Field(None, ge=1, le=5)
 
 
 class JournalFromPlanCreate(BaseModel):
@@ -202,3 +202,36 @@ class JournalDetailResponse(BaseModel):
 
 class JournalMessageResponse(BaseModel):
     message: str
+
+
+# ==================================================
+# 좋아요 (journals_like)
+# ==================================================
+
+class JournalLikeCreate(BaseModel):
+    j_id: int
+    u_id: int
+
+
+class JournalLikeResponse(BaseModel):
+    j_id: int
+    u_id: int
+    jl_create: datetime
+
+    model_config = ConfigDict(from_attributes=True)
+
+
+# ==================================================
+# 해시태그 (journals_hashtag)
+# ==================================================
+
+class JournalHashtagCreate(BaseModel):
+    j_id: int
+    h_id: int
+
+
+class JournalHashtagResponse(BaseModel):
+    j_id: int
+    h_id: int
+
+    model_config = ConfigDict(from_attributes=True)
