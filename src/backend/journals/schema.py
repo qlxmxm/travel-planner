@@ -7,7 +7,7 @@ from datetime import datetime
 # 1. 일지 (journals) 스키마
 # ==========================================
 class JournalCreate(BaseModel):
-    p_id: Optional[int] = None
+    p_id: str = Field(..., max_length=255)
     u_id: int
     j_title: str = Field(..., max_length=100)
     j_intro: Optional[str] = Field(None, max_length=100)
@@ -24,7 +24,7 @@ class JournalUpdate(BaseModel):
 
 class JournalResponse(BaseModel):
     j_id: int
-    p_id: Optional[int] = None
+    p_id: str
     u_id: int
     j_title: str
     j_intro: Optional[str] = None
@@ -40,17 +40,17 @@ class JournalResponse(BaseModel):
 # ==========================================
 class JournalItemCreate(BaseModel):
     j_id: int
-    ji_day: int = Field(1, ge=1)
-    ji_order: int = 0
+    ji_day: int
+    ji_order: int
     ji_time: Optional[datetime] = None
     ji_title: str = Field(..., max_length=100)
     ji_content: Optional[str] = None
     ji_photo: Optional[str] = Field(None, max_length=255)
-    ji_rating: Optional[int] = Field(None, ge=1, le=5)
+    ji_rating: int = Field(..., ge=1, le=5)
 
 
 class JournalItemUpdate(BaseModel):
-    ji_day: Optional[int] = Field(None, ge=1)
+    ji_day: Optional[int] = None
     ji_order: Optional[int] = None
     ji_time: Optional[datetime] = None
     ji_title: Optional[str] = Field(None, max_length=100)
@@ -68,7 +68,7 @@ class JournalItemResponse(BaseModel):
     ji_title: str
     ji_content: Optional[str] = None
     ji_photo: Optional[str] = None
-    ji_rating: Optional[int] = None
+    ji_rating: int
 
     model_config = ConfigDict(from_attributes=True)
 
@@ -92,36 +92,5 @@ class JournalCommentResponse(BaseModel):
     u_id: int
     jc_content: str
     jc_create: datetime
-
-    model_config = ConfigDict(from_attributes=True)
-
-
-# ==========================================
-# 4. 일지 좋아요 (journals_like) 스키마
-# ==========================================
-class JournalLikeCreate(BaseModel):
-    j_id: int
-    u_id: int
-
-
-class JournalLikeResponse(BaseModel):
-    j_id: int
-    u_id: int
-    jl_create: datetime
-
-    model_config = ConfigDict(from_attributes=True)
-
-
-# ==========================================
-# 5. 일지 해시태그 (journals_hashtag) 스키마
-# ==========================================
-class JournalHashtagCreate(BaseModel):
-    j_id: int
-    h_id: int
-
-
-class JournalHashtagResponse(BaseModel):
-    j_id: int
-    h_id: int
 
     model_config = ConfigDict(from_attributes=True)

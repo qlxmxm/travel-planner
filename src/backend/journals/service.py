@@ -8,8 +8,8 @@ from backend.journals.schema import (
     JournalItemCreate, JournalItemUpdate,
     JournalCommentCreate, JournalCommentUpdate
 )
-from backend.location.models import Location
-from backend.plans.models import Plans, plan_details
+# 실제 프로젝트의 Plan CRUD 경로에 맞게 수정하세요
+# from backend.plans.crud import PlanCrud, PlanItemCrud
 
 
 class JournalService:
@@ -17,69 +17,42 @@ class JournalService:
     # 1. 여행기(Journal) 서비스 (계획 복사 생성 및 관리)
     # ==========================================
     @staticmethod
-    def _get_own_plan(db: Session, plan_id: int, user_id: int) -> Plans:
-        """계획을 찾고, 본인의 계획인지 확인합니다."""
-        plan = db.query(Plans).filter(Plans.p_id == plan_id).first()
-        if not plan:
-            raise HTTPException(status_code=404, detail="해당 여행 계획을 찾을 수 없습니다.")
-        if plan.u_id != user_id:
-            raise HTTPException(status_code=403, detail="본인의 여행 계획만 변환할 수 있습니다.")
-        return plan
-
-    @staticmethod
-    def _get_plan_details(db: Session, plan_id: int) -> list:
-        """계획의 상세 일정을 방문 시간, 순서 순으로 가져옵니다."""
-        return (
-            db.query(plan_details)
-            .filter(plan_details.p_id == plan_id)
-            .order_by(plan_details.visit_time, plan_details.orders)
-            .all()
-        )
-
-    @staticmethod
-    def _calc_day(plan: Plans, detail) -> int:
-        """계획 시작일 기준 몇째 날인지 계산합니다 (1일차부터, 시간이 없으면 1일차)."""
-        if not detail.visit_time:
-            return 1
-        return max((detail.visit_time.date() - plan.p_start.date()).days + 1, 1)
-
-    @staticmethod
-    def _make_item_title(db: Session, detail) -> str:
-        """일정 제목: 장소 이름 > 메모 > 기본값 순으로 정합니다."""
-        if detail.l_id:
-            place = db.query(Location).filter(Location.l_id == detail.l_id).first()
-            if place:
-                return place.l_name
-        return detail.memo or "일정"
-
-    @staticmethod
     def create_journal_from_plan(
-        db: Session,
-        plan_id: int,
-        user_id: int,
+        db: Session, 
+        plan_id: int, 
+        user_id: int, 
         custom_title: Optional[str] = None
     ):
-        """내가 세운 여행 계획(plans)과 상세 일정(plan_details)을 복사해 여행기로 저장합니다."""
-        plan = JournalService._get_own_plan(db, plan_id, user_id)
-        details = JournalService._get_plan_details(db, plan_id)
+        """내가 세운 여행 계획(Plan)과 세부 일정(PlanItem)을 복사해 여행기로 저장합니다."""
+        plan = PlanCrud.get(db, plan_id)
+        if not plan:
+            raise HTTPException(status_code=404, detail="해당 여행 계획을 찾을 수 없습니다.")
+
+        if hasattr(plan, "user_id") and plan.user_id != user_id:
+            raise HTTPException(status_code=403, detail="본인의 여행 계획만 변환할 수 있습니다.")
+
+        plan_items = PlanItemCrud.get_by_plan(db, plan_id)
 
         try:
-            new_journal = JournalCrud.create(db, JournalCreate(
-                p_id=plan.p_id,
-                u_id=user_id,
-                j_title=custom_title or plan.p_title,
-                loc=plan.loc,
-            ))
+            # 여행기 본문 생성 (컬럼명은 실제 schema에 맞게 조정하세요)
+            journal_data = JournalCreate(
+                user_id=user_id,
+                plan_id=plan.p_id,
+                j_title=custom_title if custom_title else plan.p_title,
+                j_start_date=plan.p_start_date,
+                j_end_date=plan.p_end_date,
+            )
+            new_journal = JournalCrud.create(db, journal_data)
 
-            for detail in details:
-                JournalItemCrud.create(db, JournalItemCreate(
+            # 계획 세부 일정 복사
+            for p_item in plan_items:
+                journal_item_data = JournalItemCreate(
                     j_id=new_journal.j_id,
-                    ji_day=JournalService._calc_day(plan, detail),
-                    ji_order=detail.orders,
-                    ji_time=detail.visit_time,
-                    ji_title=JournalService._make_item_title(db, detail),
-                    ji_content=detail.memo,
-                ))
+                    ji_day=p_item.pi_day,
+                    ji_order=p_item.pi_order,
+                    ji_place=p_item.pi_place,
+                )
+                JournalItemCrud.create(db, journal_item_data)
 
             db.commit()
             db.refresh(new_journal)
@@ -140,8 +113,8 @@ class JournalService:
         if not comment:
             raise HTTPException(status_code=404, detail="댓글을 찾을 수 없습니다.")
 
-        # 작성자 본인 확인 (journals_comment 의 작성자 컬럼은 u_id)
-        if comment.u_id != current_user_id:
+        # 작성자 본인 확인 (모델의 작성자 컬럼명이 user_id라고 가정)
+        if hasattr(comment, "user_id") and comment.user_id != current_user_id:
             raise HTTPException(status_code=403, detail="본인의 댓글만 수정할 수 있습니다.")
 
         try:
@@ -160,7 +133,7 @@ class JournalService:
         if not comment:
             raise HTTPException(status_code=404, detail="댓글을 찾을 수 없습니다.")
 
-        if comment.u_id != current_user_id:
+        if hasattr(comment, "user_id") and comment.user_id != current_user_id:
             raise HTTPException(status_code=403, detail="본인의 댓글만 삭제할 수 있습니다.")
 
         try:
