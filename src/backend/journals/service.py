@@ -398,8 +398,10 @@ class JournalService:
         )
 
         # 날짜 없는 일정에 대비해 원본 계획 시작일 조회
-        plan = await JournalPlanCrud.get_plan(
-            db, journal.p_id
+        # p_id 는 NULL 허용 (원본 계획이 지워진 여행기)
+        plan = (
+            await JournalPlanCrud.get_plan(db, journal.p_id)
+            if journal.p_id else None
         )
         start_date = plan.p_start if plan else None
 
