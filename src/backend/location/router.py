@@ -15,8 +15,8 @@ router = APIRouter(tags=["장소"])
 
 # ───────── 장소 (공개) ─────────
 
-@router.get("/places", response_model=list[LocationListOut])
-async def get_places(
+@router.get("/locations", response_model=list[LocationListOut])
+async def get_locations(
     category: Literal["맛집", "관광명소", "숙소"] | None = None,  # 이 3개 말고 다른 값이면 422
     q: str | None = Query(None, description="이름·도시·주소 검색어"),
     city: str | None = None,
@@ -24,25 +24,25 @@ async def get_places(
     size: int = Query(20, ge=1, le=100),
     db: AsyncSession = Depends(get_db),
 ):
-    """38 장소 목록·검색  예) /api/places?category=맛집&city=부산"""
+    """38 장소 목록·검색  예) /api/location?category=맛집&city=부산"""
     return await service.list_locations(db, category, q, city, page, size)
 
 
-@router.get("/places/{l_id}", response_model=LocationDetailOut)
-async def get_place(l_id: int, db: AsyncSession = Depends(get_db)):
+@router.get("/locations/{l_id}", response_model=LocationDetailOut)
+async def get_location(l_id: int, db: AsyncSession = Depends(get_db)):
     """39 장소 상세 조회"""
     return await service.get_location(db, l_id)
 
 
 # ───────── 리뷰 ─────────
 
-@router.get("/places/{l_id}/reviews", response_model=list[ReviewOut])
+@router.get("/locations/{l_id}/reviews", response_model=list[ReviewOut])
 async def get_reviews(l_id: int, db: AsyncSession = Depends(get_db)):
     """40 리뷰 목록 조회 (공개)"""
     return await service.list_reviews(db, l_id)
 
 
-@router.post("/places/{l_id}/reviews", response_model=ReviewOut, status_code=status.HTTP_201_CREATED)
+@router.post("/locations/{l_id}/reviews", response_model=ReviewOut, status_code=status.HTTP_201_CREATED)
 async def write_review(
     l_id: int,
     body: ReviewIn,
