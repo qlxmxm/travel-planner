@@ -8,7 +8,9 @@ from backend.journals.crud import (
     JournalPlanCrud,
     JournalCrud,
     JournalItemCrud,
-    JournalCommentCrud
+    JournalCommentCrud,
+    JournalLikeCrud,
+    JournalHashtagCrud
 )
 from backend.journals.schema import (
     JournalCreate,
@@ -18,13 +20,16 @@ from backend.journals.schema import (
     JournalFromPlanCreate,
     JournalFullUpdate,
     JournalCommentCreate,
-    JournalCommentUpdate
+    JournalCommentUpdate,
+    JournalLikeCreate,
+    JournalHashtagCreate
 )
 
 
 # ==================================================
 # 1. 공통 검증
 # ==================================================
+
 class JournalValidator:
 
     @staticmethod
@@ -46,13 +51,43 @@ class JournalValidator:
         return plan
 
     @staticmethod
-    async def check_journal_author(
-        db: AsyncSession, j_id: int, user_id: int
+    async def check_completed_plan(
+        db: AsyncSession, plan_id: int, user_id: int
+    ):
+        plan = await JournalValidator.check_plan_access(
+            db, plan_id, user_id
+        )
+
+        if not plan.p_status:
+            raise HTTPException(
+                400, "완료된 여행계획만 여행기로 작성할 수 있습니다."
+            )
+
+        if plan.p_start is None:
+            raise HTTPException(
+                400, "여행계획의 시작일이 없습니다."
+            )
+
+        return plan
+
+    @staticmethod
+    async def check_journal_exists(
+        db: AsyncSession, j_id: int
     ):
         journal = await JournalCrud.get(db, j_id)
 
         if journal is None:
             raise HTTPException(404, "여행기를 찾을 수 없습니다.")
+
+        return journal
+
+    @staticmethod
+    async def check_journal_author(
+        db: AsyncSession, j_id: int, user_id: int
+    ):
+        journal = await JournalValidator.check_journal_exists(
+            db, j_id
+        )
 
         if journal.u_id != user_id:
             raise HTTPException(
@@ -79,13 +114,14 @@ class JournalValidator:
 
 
 # ==================================================
-# 2. 프론트엔드 반환 데이터 변환
+# 2. 프론트엔드 응답 데이터 변환
 # ==================================================
+
 class JournalResponseService:
 
     @staticmethod
     def format_time(value):
-        """React input[type=time]에 맞는 HH:mm 반환"""
+        """React input[type=time]용 HH:mm 문자열"""
         if value is None:
             return ""
         if isinstance(value, datetime):
@@ -101,18 +137,91 @@ class JournalResponseService:
         return None
 
     @staticmethod
-    def group_days(items, start_date=None):
-        """
-        JournalWritePage.jsx에서 사용하는 days 구조 생성
+    def get_day_number(visit_time, start_time):
+        if visit_time is None or start_time is None:
+            raise HTTPException(
+                400, "여행 일정의 날짜 정보가 없습니다."
+            )
 
-        [
-            {
-                "ji_day": 1,
-                "date": "2026-11-20",
-                "items": [...]
-            }
-        ]
+        visit_date = (
+            visit_time.date()
+            if isinstance(visit_time, datetime)
+            else visit_time
+        )
+        start_date = (
+            start_time.date()
+            if isinstance(start_time, datetime)
+            else start_time
+        )
+
+        day_number = (visit_date - start_date).days + 1
+
+        if day_number < 1:
+            raise HTTPException(
+                400, "여행 시작일보다 앞선 일정이 있습니다."
+            )
+
+        return day_number
+
+    @staticmethod
+    def get_place_title(detail, place_name):
         """
+        장소 연결이 없는 일정도 여행기로 복사.
+        장소명 → 메모 → 기본 제목 순서로 사용.
+        """
+        if place_name and place_name.strip():
+            return place_name.strip()
+
+        if detail.memo and detail.memo.strip():
+            return detail.memo.strip()
+
+        return "장소 미지정"
+
+    @staticmethod
+    def format_journal(journal):
+        return {
+            "j_id": journal.j_id,
+            "p_id": journal.p_id,
+            "u_id": journal.u_id,
+            "j_title": journal.j_title,
+            "j_intro": journal.j_intro or "",
+            "j_photo": journal.j_photo or "",
+            "p_create": journal.p_create,
+            "loc": journal.loc
+        }
+
+    @staticmethod
+    def format_item(item):
+        return {
+            "ji_id": item.ji_id,
+            "j_id": item.j_id,
+            "ji_day": item.ji_day,
+            "ji_order": item.ji_order,
+            "ji_time": JournalResponseService.format_time(
+                item.ji_time
+            ),
+            "ji_title": item.ji_title,
+            "ji_content": item.ji_content or "",
+            "ji_photo": item.ji_photo or "",
+            "ji_rating": item.ji_rating
+        }
+
+    @staticmethod
+    def format_comments(comments):
+        return [
+            {
+                "jc_id": comment.jc_id,
+                "j_id": comment.j_id,
+                "u_id": comment.u_id,
+                "jc_content": comment.jc_content,
+                "jc_create": comment.jc_create
+            }
+            for comment in comments
+        ]
+
+    @staticmethod
+    def group_days(items, start_date=None):
+        """저장된 일정을 {ji_day, date, items} 구조로 변환"""
         days = {}
 
         for item in items:
@@ -141,70 +250,26 @@ class JournalResponseService:
                     "items": []
                 }
 
-            days[day_number]["items"].append({
-                "ji_id": item.ji_id,
-                "j_id": item.j_id,
-                "ji_day": item.ji_day,
-                "ji_order": item.ji_order,
-                "ji_time": JournalResponseService.format_time(
-                    item.ji_time
-                ),
-                "ji_title": item.ji_title,
-                "ji_content": item.ji_content or "",
-                "ji_photo": item.ji_photo or "",
-                "ji_rating": item.ji_rating
-            })
+            days[day_number]["items"].append(
+                JournalResponseService.format_item(item)
+            )
 
-        return [
-            days[key]
-            for key in sorted(days)
-        ]
-
-    @staticmethod
-    def format_journal(journal):
-        return {
-            "j_id": journal.j_id,
-            "p_id": journal.p_id,
-            "u_id": journal.u_id,
-            "j_title": journal.j_title,
-            "j_intro": journal.j_intro or "",
-            "j_photo": journal.j_photo or "",
-            "p_create": journal.p_create,
-            "loc": journal.loc
-        }
-
-    @staticmethod
-    def format_comments(comments):
-        return [
-            {
-                "jc_id": comment.jc_id,
-                "j_id": comment.j_id,
-                "u_id": comment.u_id,
-                "jc_content": comment.jc_content,
-                "jc_create": comment.jc_create
-            }
-            for comment in comments
-        ]
+        return [days[key] for key in sorted(days)]
 
 
 # ==================================================
-# 3. 여행계획 → 여행기
+# 3. 여행계획 → 여행기 작성 및 복사
 # ==================================================
+
 class JournalPlanService:
 
     @staticmethod
     async def get_plan_preview(
         db: AsyncSession, plan_id: int, user_id: int
     ):
-        plan = await JournalValidator.check_plan_access(
+        plan = await JournalValidator.check_completed_plan(
             db, plan_id, user_id
         )
-
-        if not plan.p_status:
-            raise HTTPException(
-                400, "완료된 여행계획만 여행기로 작성할 수 있습니다."
-            )
-
         details = await JournalPlanCrud.get_plan_details(
             db, plan_id
         )
@@ -212,32 +277,28 @@ class JournalPlanService:
         days = {}
 
         for detail, place_name in details:
-            visit_date = detail.visit_time.date()
-            date_key = visit_date.isoformat()
-            day_number = (
-                visit_date - plan.p_start.date()
-            ).days + 1
+            day_number = JournalResponseService.get_day_number(
+                detail.visit_time, plan.p_start
+            )
+            date_key = detail.visit_time.date().isoformat()
 
-            if day_number < 1:
-                raise HTTPException(
-                    400, "여행 시작일보다 앞선 일정이 있습니다."
-                )
-
-            if date_key not in days:
-                days[date_key] = {
+            if day_number not in days:
+                days[day_number] = {
                     "ji_day": day_number,
                     "date": date_key,
                     "items": []
                 }
 
-            days[date_key]["items"].append({
+            days[day_number]["items"].append({
                 "pd_id": detail.pd_id,
                 "ji_day": day_number,
                 "ji_order": detail.orders,
                 "ji_time": JournalResponseService.format_time(
                     detail.visit_time
                 ),
-                "ji_title": place_name,
+                "ji_title": JournalResponseService.get_place_title(
+                    detail, place_name
+                ),
                 "ji_content": "",
                 "ji_photo": "",
                 "ji_rating": None
@@ -251,7 +312,7 @@ class JournalPlanService:
                 "j_photo": "",
                 "loc": plan.loc
             },
-            "days": list(days.values())
+            "days": [days[key] for key in sorted(days)]
         }
 
     @staticmethod
@@ -261,15 +322,9 @@ class JournalPlanService:
         user_id: int,
         data: JournalFromPlanCreate
     ):
-        plan = await JournalValidator.check_plan_access(
+        plan = await JournalValidator.check_completed_plan(
             db, plan_id, user_id
         )
-
-        if not plan.p_status:
-            raise HTTPException(
-                400, "완료된 여행계획만 여행기로 작성할 수 있습니다."
-            )
-
         details = await JournalPlanCrud.get_plan_details(
             db, plan_id
         )
@@ -278,7 +333,6 @@ class JournalPlanService:
             detail.pd_id: (detail, place_name)
             for detail, place_name in details
         }
-
         submitted_items = {
             item.pd_id: item
             for item in data.items
@@ -307,39 +361,32 @@ class JournalPlanService:
             journal = await JournalCrud.create(
                 db, journal_data
             )
-
+            journal_id = journal.j_id
             journal_items = []
 
             for pd_id, (detail, place_name) in original_items.items():
                 submitted = submitted_items[pd_id]
 
-                day_number = (
-                    detail.visit_time.date()
-                    - plan.p_start.date()
-                ).days + 1
-
-                if day_number < 1:
-                    raise HTTPException(
-                        400, "여행 시작일보다 앞선 일정이 있습니다."
-                    )
+                day_number = JournalResponseService.get_day_number(
+                    detail.visit_time, plan.p_start
+                )
 
                 journal_items.append(
                     JournalItemCreate(
-                        j_id=journal.j_id,
+                        j_id=journal_id,
                         ji_day=day_number,
                         ji_order=detail.orders,
                         ji_time=detail.visit_time,
-                        ji_title=place_name,
+                        ji_title=JournalResponseService.get_place_title(
+                            detail, place_name
+                        ),
                         ji_content=submitted.ji_content,
                         ji_photo=submitted.ji_photo,
                         ji_rating=submitted.ji_rating
                     )
                 )
 
-            await JournalItemCrud.create_many(
-                db, journal_items
-            )
-
+            await JournalItemCrud.create_many(db, journal_items)
             await db.commit()
 
         except Exception:
@@ -347,13 +394,14 @@ class JournalPlanService:
             raise
 
         return await JournalService.get_journal_detail(
-            db, journal.j_id
+            db, journal_id
         )
 
 
 # ==================================================
-# 4. 여행기 조회·수정·삭제
+# 4. 여행기 조회, 수정, 삭제
 # ==================================================
+
 class JournalService:
 
     @staticmethod
@@ -363,43 +411,31 @@ class JournalService:
         limit: int = 100
     ):
         if skip < 0 or not 1 <= limit <= 100:
-            raise HTTPException(
-                422, "페이지 범위가 올바르지 않습니다."
-            )
+            raise HTTPException(422, "페이지 범위가 올바르지 않습니다.")
 
-        return await JournalCrud.get_list(
-            db, skip, limit
-        )
+        return await JournalCrud.get_list(db, skip, limit)
 
     @staticmethod
     async def get_my_journals(
         db: AsyncSession, user_id: int
     ):
-        return await JournalCrud.get_by_user(
-            db, user_id
-        )
+        return await JournalCrud.get_by_user(db, user_id)
 
     @staticmethod
     async def get_journal_detail(
         db: AsyncSession, j_id: int
     ):
-        journal = await JournalCrud.get(db, j_id)
-
-        if journal is None:
-            raise HTTPException(
-                404, "여행기를 찾을 수 없습니다."
-            )
-
-        items = await JournalItemCrud.get_by_journal(
+        journal = await JournalValidator.check_journal_exists(
             db, j_id
         )
+        items = await JournalItemCrud.get_by_journal(db, j_id)
         comments = await JournalCommentCrud.get_by_journal(
             db, j_id
         )
 
-        # 날짜 없는 일정에 대비해 원본 계획 시작일 조회
-        plan = await JournalPlanCrud.get_plan(
-            db, journal.p_id
+        plan = (
+            await JournalPlanCrud.get_plan(db, journal.p_id)
+            if journal.p_id is not None else None
         )
         start_date = plan.p_start if plan else None
 
@@ -424,8 +460,6 @@ class JournalService:
         await JournalValidator.check_journal_author(
             db, j_id, user_id
         )
-
-        # JournalWritePage.jsx 수정 화면과 동일한 구조
         detail = await JournalService.get_journal_detail(
             db, j_id
         )
@@ -446,11 +480,16 @@ class JournalService:
             db, j_id, user_id
         )
 
+        if "j_title" in data.model_fields_set:
+            if data.j_title is None or not data.j_title.strip():
+                raise HTTPException(
+                    422, "여행기 제목을 입력해야 합니다."
+                )
+
         if data.items is not None:
             existing_items = await JournalItemCrud.get_by_journal(
                 db, j_id
             )
-
             existing_ids = {
                 item.ji_id for item in existing_items
             }
@@ -488,7 +527,6 @@ class JournalService:
                             exclude={"ji_id"}
                         )
                     )
-
                     await JournalItemCrud.update(
                         db, item.ji_id, item_update
                     )
@@ -514,16 +552,11 @@ class JournalService:
         )
 
         try:
-            await JournalCommentCrud.delete_by_journal(
-                db, j_id
-            )
-            await JournalItemCrud.delete_by_journal(
-                db, j_id
-            )
-            await JournalCrud.delete(
-                db, j_id
-            )
-
+            await JournalCommentCrud.delete_by_journal(db, j_id)
+            await JournalItemCrud.delete_by_journal(db, j_id)
+            await JournalLikeCrud.delete_by_journal(db, j_id)
+            await JournalHashtagCrud.delete_by_journal(db, j_id)
+            await JournalCrud.delete(db, j_id)
             await db.commit()
 
         except Exception:
@@ -536,6 +569,7 @@ class JournalService:
 # ==================================================
 # 5. 여행기 개별 일정 수정
 # ==================================================
+
 class JournalItemService:
 
     @staticmethod
@@ -545,14 +579,10 @@ class JournalItemService:
         user_id: int,
         data: JournalItemUpdate
     ):
-        item = await JournalItemCrud.get(
-            db, ji_id
-        )
+        item = await JournalItemCrud.get(db, ji_id)
 
         if item is None:
-            raise HTTPException(
-                404, "여행 일정을 찾을 수 없습니다."
-            )
+            raise HTTPException(404, "여행 일정을 찾을 수 없습니다.")
 
         await JournalValidator.check_journal_author(
             db, item.j_id, user_id
@@ -562,7 +592,6 @@ class JournalItemService:
             updated_item = await JournalItemCrud.update(
                 db, ji_id, data
             )
-
             await db.commit()
             await db.refresh(updated_item)
 
@@ -570,24 +599,13 @@ class JournalItemService:
             await db.rollback()
             raise
 
-        return {
-            "ji_id": updated_item.ji_id,
-            "j_id": updated_item.j_id,
-            "ji_day": updated_item.ji_day,
-            "ji_order": updated_item.ji_order,
-            "ji_time": JournalResponseService.format_time(
-                updated_item.ji_time
-            ),
-            "ji_title": updated_item.ji_title,
-            "ji_content": updated_item.ji_content or "",
-            "ji_photo": updated_item.ji_photo or "",
-            "ji_rating": updated_item.ji_rating
-        }
+        return JournalResponseService.format_item(updated_item)
 
 
 # ==================================================
 # 6. 여행기 댓글
 # ==================================================
+
 class JournalCommentService:
 
     @staticmethod
@@ -597,14 +615,7 @@ class JournalCommentService:
         user_id: int,
         content: str
     ):
-        journal = await JournalCrud.get(
-            db, j_id
-        )
-
-        if journal is None:
-            raise HTTPException(
-                404, "여행기를 찾을 수 없습니다."
-            )
+        await JournalValidator.check_journal_exists(db, j_id)
 
         if not isinstance(content, str) or not content.strip():
             raise HTTPException(
@@ -632,21 +643,10 @@ class JournalCommentService:
 
     @staticmethod
     async def get_comments_by_journal(
-        db: AsyncSession,
-        j_id: int
+        db: AsyncSession, j_id: int
     ):
-        journal = await JournalCrud.get(
-            db, j_id
-        )
-
-        if journal is None:
-            raise HTTPException(
-                404, "여행기를 찾을 수 없습니다."
-            )
-
-        return await JournalCommentCrud.get_by_journal(
-            db, j_id
-        )
+        await JournalValidator.check_journal_exists(db, j_id)
+        return await JournalCommentCrud.get_by_journal(db, j_id)
 
     @staticmethod
     async def update_comment(
@@ -659,11 +659,15 @@ class JournalCommentService:
             db, jc_id, user_id
         )
 
+        if not data.jc_content.strip():
+            raise HTTPException(
+                422, "댓글 내용을 입력해야 합니다."
+            )
+
         try:
             comment = await JournalCommentCrud.update(
                 db, jc_id, data
             )
-
             await db.commit()
             await db.refresh(comment)
 
@@ -684,9 +688,7 @@ class JournalCommentService:
         )
 
         try:
-            await JournalCommentCrud.delete(
-                db, jc_id
-            )
+            await JournalCommentCrud.delete(db, jc_id)
             await db.commit()
 
         except Exception:
@@ -694,3 +696,156 @@ class JournalCommentService:
             raise
 
         return {"message": "댓글이 삭제되었습니다."}
+
+
+# ==================================================
+# 7. 여행기 좋아요
+# ==================================================
+
+class JournalLikeService:
+
+    @staticmethod
+    async def add_like(
+        db: AsyncSession, j_id: int, user_id: int
+    ):
+        await JournalValidator.check_journal_exists(db, j_id)
+
+        existing = await JournalLikeCrud.get(
+            db, j_id, user_id
+        )
+        if existing is not None:
+            raise HTTPException(
+                409, "이미 좋아요를 누른 여행기입니다."
+            )
+
+        try:
+            like = await JournalLikeCrud.create(
+                db,
+                JournalLikeCreate(j_id=j_id, u_id=user_id)
+            )
+            await db.commit()
+            await db.refresh(like)
+
+        except Exception:
+            await db.rollback()
+            raise
+
+        return like
+
+    @staticmethod
+    async def remove_like(
+        db: AsyncSession, j_id: int, user_id: int
+    ):
+        await JournalValidator.check_journal_exists(db, j_id)
+
+        existing = await JournalLikeCrud.get(
+            db, j_id, user_id
+        )
+        if existing is None:
+            raise HTTPException(
+                404, "좋아요 기록을 찾을 수 없습니다."
+            )
+
+        try:
+            await JournalLikeCrud.delete(db, j_id, user_id)
+            await db.commit()
+
+        except Exception:
+            await db.rollback()
+            raise
+
+        return {"message": "좋아요가 취소되었습니다."}
+
+    @staticmethod
+    async def get_like_count(
+        db: AsyncSession, j_id: int
+    ):
+        await JournalValidator.check_journal_exists(db, j_id)
+        return {
+            "j_id": j_id,
+            "like_count": await JournalLikeCrud.count_by_journal(
+                db, j_id
+            )
+        }
+
+    @staticmethod
+    async def get_my_likes(
+        db: AsyncSession, user_id: int
+    ):
+        return await JournalLikeCrud.get_by_user(db, user_id)
+
+
+# ==================================================
+# 8. 여행기 해시태그
+# ==================================================
+
+class JournalHashtagService:
+
+    @staticmethod
+    async def add_hashtag(
+        db: AsyncSession,
+        j_id: int,
+        user_id: int,
+        h_id: int
+    ):
+        await JournalValidator.check_journal_author(
+            db, j_id, user_id
+        )
+
+        existing = await JournalHashtagCrud.get(
+            db, j_id, h_id
+        )
+        if existing is not None:
+            raise HTTPException(
+                409, "이미 연결된 해시태그입니다."
+            )
+
+        try:
+            hashtag = await JournalHashtagCrud.create(
+                db,
+                JournalHashtagCreate(j_id=j_id, h_id=h_id)
+            )
+            await db.commit()
+            await db.refresh(hashtag)
+
+        except Exception:
+            await db.rollback()
+            raise
+
+        return hashtag
+
+    @staticmethod
+    async def get_hashtags_by_journal(
+        db: AsyncSession, j_id: int
+    ):
+        await JournalValidator.check_journal_exists(db, j_id)
+        return await JournalHashtagCrud.get_by_journal(db, j_id)
+
+    @staticmethod
+    async def remove_hashtag(
+        db: AsyncSession,
+        j_id: int,
+        user_id: int,
+        h_id: int
+    ):
+        await JournalValidator.check_journal_author(
+            db, j_id, user_id
+        )
+
+        existing = await JournalHashtagCrud.get(
+            db, j_id, h_id
+        )
+        if existing is None:
+            raise HTTPException(
+                404, "연결된 해시태그를 찾을 수 없습니다."
+            )
+
+        try:
+            await JournalHashtagCrud.delete(db, j_id, h_id)
+            await db.commit()
+
+        except Exception:
+            await db.rollback()
+            raise
+
+        return {"message": "해시태그 연결이 삭제되었습니다."}
