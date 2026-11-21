@@ -157,7 +157,7 @@ class JournalFromPlanItemCreate(BaseModel):
     pd_id: int
     ji_content: Optional[str] = None
     ji_photo: Optional[str] = Field(None, max_length=255)
-    ji_rating: Optional[int] = Field(None, ge=1, le=5)
+    ji_rating: int = Field(..., ge=1, le=5)
 
 
 class JournalFromPlanCreate(BaseModel):
@@ -237,24 +237,6 @@ class JournalDetailResponse(BaseModel):
     days: list[JournalDayResponse]
     comments: list[JournalCommentResponse]
 
-
-# ==================================================
-# 10. 여행기 좋아요 (journals_like)
-# ==================================================
-
-class JournalLikeCreate(BaseModel):
-    """좋아요 추가"""
-    j_id: int
-    u_id: int
-
-
-class JournalLikeResponse(BaseModel):
-    """좋아요 조회"""
-    j_id: int
-    u_id: int
-    jl_create: datetime
-
-    model_config = ConfigDict(from_attributes=True)
 
 
 # ==================================================
