@@ -14,6 +14,7 @@ class LocationListOut(BaseModel):
     l_name: str
     l_city: str
     l_add: str
+    l_image: Optional[str] = None  # 프론트 photos.js 의 키 이름
     avg_rating: float = 0          # DB에 없음, 리뷰로 계산
     review_count: int = 0          # DB에 없음, 리뷰로 계산
 
@@ -31,6 +32,7 @@ class LocationDetailOut(BaseModel):
     l_end: Optional[str] = None    # 맛집=마감시간, 숙소=체크아웃
     l_intro: Optional[str] = None
     l_city: str
+    l_image: Optional[str] = None  # 프론트 photos.js 의 키 이름
     avg_rating: float = 0
     review_count: int = 0
 

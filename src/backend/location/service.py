@@ -112,17 +112,8 @@ async def list_reviews(db: AsyncSession, l_id: int) -> list[dict]:
 
 
 async def create_review(db: AsyncSession, l_id: int, user: User, body: ReviewIn) -> dict:
-    """41 리뷰 작성. 한 장소에 한 사람당 리뷰 1개 (이미 있으면 409)."""
+    """41 리뷰 작성. 한 사람이 한 장소에 여러 개 작성할 수 있습니다 (팀 결정)."""
     await _get_location_or_404(db, l_id)
-
-    already = await db.execute(
-        select(LocationReview.lr_id).where(
-            LocationReview.l_id == l_id,
-            LocationReview.u_id == user.u_id,
-        )
-    )
-    if already.scalar_one_or_none() is not None:
-        raise HTTPException(status.HTTP_409_CONFLICT, "이미 이 장소에 리뷰를 작성했습니다")
 
     u_name = user.u_name   # commit 하면 user 정보가 만료돼서, 미리 꺼내 둡니다 (비동기에서 에러 방지)
     review = LocationReview(

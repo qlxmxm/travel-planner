@@ -1,13 +1,13 @@
 // [장소] 상세 화면 위쪽: 사진 + 이름 + 평균 별점 + 주소/전화/영업시간 + 소개 + 지도 자리
 import StarRating from '../../components/common/StarRating.jsx';
-import { formatHours, getHoursLabel } from './placeUtils.js';
+import { formatHours, getHoursLabel, imageOfPlace } from './placeUtils.js';
 
 export default function PlaceInfo({ place, reviewSummary }) {
   const { average, count } = reviewSummary;
   return (
     <>
       <div className="pd__top">
-        <img src={place.l_image} alt="" />
+        <img src={imageOfPlace(place)} alt="" />
         <div className="pd__info">
           <div className="pd__cat">{place.l_category} · {place.l_city}</div>
           <h1>{place.l_name}</h1>
@@ -18,7 +18,7 @@ export default function PlaceInfo({ place, reviewSummary }) {
           </div>
           <dl>
             <dt>주소</dt><dd>{place.l_add}</dd>
-            <dt>전화</dt><dd>{place.l_telno}</dd>
+            <dt>전화</dt><dd>{place.l_telno || '정보 없음'}</dd>
             <dt>{getHoursLabel(place)}</dt><dd>{formatHours(place)}</dd>
           </dl>
         </div>

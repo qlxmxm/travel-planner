@@ -2,14 +2,14 @@
 import { useState } from 'react';
 import Avatar from '../../components/common/Avatar.jsx';
 import StarRating from '../../components/common/StarRating.jsx';
-import { isValidReview } from './placeUtils.js';
+import { formatReviewDate, isValidReview } from './placeUtils.js';
 
 export default function ReviewItem({ review, isMine, onUpdate, onDelete }) {
   const [isEditing, setIsEditing] = useState(false);
   const [draft, setDraft] = useState({ rating: 0, content: '' });
 
   function startEditing() {
-    setDraft({ rating: review.lr_rating, content: review.lr_content });
+    setDraft({ rating: review.lr_rating, content: review.lr_content ?? '' });
     setIsEditing(true);
   }
 
@@ -23,7 +23,7 @@ export default function ReviewItem({ review, isMine, onUpdate, onDelete }) {
     <li>
       <Avatar name={review.u_name} />
       <div className="pd-reviews__body">
-        <div><b>{review.u_name}</b><span>{review.lr_create}</span></div>
+        <div><b>{review.u_name}</b><span>{formatReviewDate(review.lr_created)}</span></div>
         {isEditing ? (
           <div className="pd-reviews__edit">
             <StarRating value={draft.rating} onChange={(rating) => setDraft((current) => ({ ...current, rating }))} size={22} />
