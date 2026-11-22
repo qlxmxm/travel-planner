@@ -11,6 +11,11 @@ from backend.plans.schemas import (
     PlanCreate, PlanUpdate, BudgetCreate, BudgetUpdate
 )
 
+from datetime import datetime
+from zoneinfo import ZoneInfo
+
+now = datetime.now(ZoneInfo("Asia/Seoul")).replace(tzinfo=None)
+
 
 # ==================================================
 # 1. 여행계획 CRUD
