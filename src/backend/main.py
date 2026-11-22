@@ -6,7 +6,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from backend.login.router import router as login_router
 from backend.plans.router import router as plans_router         # [여행계획]
 from backend.journals.router import router as journals_router   # [여행기]
-# from backend.location.router import router as location_router    # [장소]
+from backend.location.router import router as location_router    # [장소]
 
 app = FastAPI(title="여행 계획 플래너 API")
 
@@ -22,7 +22,7 @@ app.add_middleware(
 app.include_router(login_router, prefix="/api")
 app.include_router(plans_router, prefix="/api")
 app.include_router(journals_router, prefix="/api")
-# app.include_router(location_router, prefix="/api")
+app.include_router(location_router, prefix="/api")
 
 
 @app.get("/api/health")
