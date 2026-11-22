@@ -7,7 +7,7 @@ const http = axios.create({
   timeout: 10000,
 });
 
-// 로그인 시 발급받은 JWT 자동 첨부
+// 로그인 JWT 자동 첨부
 http.interceptors.request.use((config) => {
   const token = getToken();
 
@@ -18,7 +18,7 @@ http.interceptors.request.use((config) => {
   return config;
 });
 
-// FastAPI 오류 메시지를 화면에서 사용할 수 있도록 변환
+// FastAPI 오류 메시지 변환
 http.interceptors.response.use(
   (response) => response,
   (error) => {
@@ -98,7 +98,7 @@ export const journalApi = {
   // 4. 여행기 개별 일정
   // ==================================================
 
-  // 특정 여행 일정의 내용·사진·별점 수정
+  // 일정의 내용·사진·별점 수정
   updateItem(itemId, payload) {
     return data(http.patch(`/items/${itemId}`, payload));
   },
@@ -107,7 +107,7 @@ export const journalApi = {
   // 5. 댓글
   // ==================================================
 
-  // 여행기 댓글 목록
+  // 여행기 댓글 조회
   getComments(journalId) {
     return data(http.get(`/${journalId}/comments`));
   },
@@ -132,49 +132,11 @@ export const journalApi = {
   },
 
   // ==================================================
-  // 6. 좋아요
+  // 6. 해시태그 조회
   // ==================================================
 
-  // 좋아요 등록
-  addLike(journalId) {
-    return data(http.post(`/${journalId}/likes`));
-  },
-
-  // 좋아요 취소
-  removeLike(journalId) {
-    return data(http.delete(`/${journalId}/likes`));
-  },
-
-  // 여행기 좋아요 개수
-  getLikeCount(journalId) {
-    return data(http.get(`/${journalId}/likes/count`));
-  },
-
-  // 내가 누른 좋아요 목록
-  getMyLikes() {
-    return data(http.get('/me/likes'));
-  },
-
-  // ==================================================
-  // 7. 해시태그
-  // ==================================================
-
-  // 여행기에 연결된 해시태그 조회
+  // 원본 여행계획에 연결된 해시태그 조회
   getHashtags(journalId) {
     return data(http.get(`/${journalId}/hashtags`));
-  },
-
-  // 해시태그 연결
-  addHashtag(journalId, hashtagId) {
-    return data(http.post(
-      `/${journalId}/hashtags/${hashtagId}`
-    ));
-  },
-
-  // 해시태그 연결 삭제
-  removeHashtag(journalId, hashtagId) {
-    return data(http.delete(
-      `/${journalId}/hashtags/${hashtagId}`
-    ));
   },
 };
