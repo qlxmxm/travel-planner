@@ -27,6 +27,7 @@ from backend.plans.service import (
 from backend.login.models import User
 from backend.login.security import get_current_user
 
+
 router = APIRouter(prefix="/plans", tags=["여행 계획"])
 
 
@@ -96,12 +97,14 @@ async def delete_plan_by_id(
 )
 async def create_invite(
     plan_id: int,
-    invite: InviteCreate,
     db: AsyncSession = Depends(get_db),
+    user: User = Depends(get_current_user),
 ):
-    if invite.p_id != plan_id:
-        raise HTTPException(422, "여행계획 ID가 일치하지 않습니다.")
-    return await InviteService.create_invite(db=db, data=invite)
+    return await InviteService.create_invite(
+        db=db,
+        plan_id=plan_id,
+        user_id=user.u_id,
+    )
 
 
 @router.post("/invites/verify", response_model=InviteInDB)
@@ -130,6 +133,7 @@ async def join_plan_by_invite(
         code=data.i_code,
         user_id=user.u_id,
     )
+    
 
 
 @router.get(
@@ -139,9 +143,12 @@ async def join_plan_by_invite(
 async def get_invites_by_plan(
     plan_id: int,
     db: AsyncSession = Depends(get_db),
+    user: User = Depends(get_current_user),
 ):
     return await InviteService.get_invites_by_plan(
-        db=db, plan_id=plan_id
+        db=db,
+        plan_id=plan_id,
+        user_id=user.u_id,
     )
 
 
