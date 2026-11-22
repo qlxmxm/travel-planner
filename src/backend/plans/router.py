@@ -24,6 +24,9 @@ from backend.plans.service import (
     ExpenseService,
 )
 
+from backend.login.models import User
+from backend.login.security import get_current_user
+
 router = APIRouter(prefix="/plans", tags=["여행 계획"])
 
 
@@ -111,6 +114,7 @@ async def verify_invite(
     )
 
 
+
 @router.post(
     "/invites/join",
     response_model=PlanMemberInDB,
@@ -118,12 +122,13 @@ async def verify_invite(
 )
 async def join_plan_by_invite(
     data: InviteVerify,
-    user_id: int,
     db: AsyncSession = Depends(get_db),
+    user: User = Depends(get_current_user),
 ):
-    # TODO: 인증 연동 후 user_id를 로그인 사용자 정보에서 가져오기
     return await InviteService.use_invite(
-        db=db, code=data.i_code, user_id=user_id
+        db=db,
+        code=data.i_code,
+        user_id=user.u_id,
     )
 
 
