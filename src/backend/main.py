@@ -3,12 +3,29 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
+from contextlib import asynccontextmanager
+from backend.plans.scheduler import scheduler, update_completed_plans
+
 from backend.login.router import router as login_router
 from backend.plans.router import router as plans_router         # [여행계획]
 from backend.journals.router import router as journals_router   # [여행기]
 from backend.location.router import router as location_router    # [장소]
 
-app = FastAPI(title="여행 계획 플래너 API")
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    await update_completed_plans()
+    scheduler.start()
+
+    try:
+        yield
+    finally:
+        scheduler.shutdown(wait=False)
+
+
+app = FastAPI(
+    title="여행 계획 플래너 API",
+    lifespan=lifespan,
+)
 
 
 app.add_middleware(

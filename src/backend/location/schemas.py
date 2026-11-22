@@ -8,7 +8,7 @@ from pydantic import AliasChoices, BaseModel, Field
 # ───────── 장소 (조회만 가능) ─────────
 
 class LocationListOut(BaseModel):
-    """38 GET /places 응답 배열의 한 칸"""
+    """38 GET /location 응답 배열의 한 칸"""
     l_id: int
     l_category: str
     l_name: str
@@ -21,7 +21,7 @@ class LocationListOut(BaseModel):
 
 
 class LocationDetailOut(BaseModel):
-    """39 GET /places/{l_id} 응답"""
+    """39 GET /locations/{l_id} 응답"""
     l_id: int
     l_category: str
     l_name: str

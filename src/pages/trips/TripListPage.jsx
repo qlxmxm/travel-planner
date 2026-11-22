@@ -11,6 +11,7 @@ import Modal from '../../components/common/Modal.jsx';
 import { useAuth } from '../../context/AuthContext.jsx';
 import { sampleTrips, isMember, canSee } from '../../data/sampleTrips.js';
 import { tagList } from '../../data/hashtags.js';
+import { request } from '../../api/client.js';
 
 const SCOPES = ['전체', '내 여행계획', '다른 사람 계획'];
 
@@ -35,15 +36,42 @@ export default function TripListPage() {
     return !kw || [t.title, t.destination, t.owner_name, ...t.hashtags].some((s) => s.toLowerCase().includes(kw));
   });
 
-  const join = (e) => {
+  const [joining, setJoining] = useState(false);
+
+  const join = async (e) => {
     e.preventDefault();
-    const found = trips.find((t) => t.invite_code === code.trim().toUpperCase());
-    if (!found) return setJoinMsg({ ok: false, text: '존재하지 않는 초대 코드예요.' });
-    if (new Date(found.invite_expire) < new Date(new Date().toDateString())) return setJoinMsg({ ok: false, text: '만료된 초대 코드예요.' });
-    if (isMember(found, user)) return setJoinMsg({ ok: false, text: '이미 참여 중인 여행이에요.' });
-    setTrips((l) => l.map((t) => (t.trip_id === found.trip_id ? { ...t, member_ids: [...t.member_ids, user.user_id], members: t.members + 1 } : t)));
-    setJoinMsg({ ok: true, text: `“${found.title}”에 참여했어요!` });
-    setCode('');
+    if (joining) return;
+
+    const inviteCode = code.trim();
+    if (!inviteCode) return;
+
+    setJoining(true);
+    setJoinMsg(null);
+
+    try {
+      await request('/plans/invites/verify', {
+        method: 'POST',
+        body: { i_code: inviteCode },
+      });
+
+      await request('/plans/invites/join', {
+        method: 'POST',
+        body: { i_code: inviteCode },
+      });
+
+      setJoinMsg({
+        ok: true,
+        text: '여행에 참여했어요!',
+      });
+      setCode('');
+    } catch (error) {
+      setJoinMsg({
+        ok: false,
+        text: error.message || '초대 코드를 확인할 수 없습니다.',
+      });
+    } finally {
+      setJoining(false);
+    }
   };
   const closeJoin = () => { setJoinOpen(false); setJoinMsg(null); setCode(''); };
 
@@ -86,7 +114,9 @@ export default function TripListPage() {
           {joinMsg && <p className={joinMsg.ok ? 'form-ok' : 'form-error'} role="status">{joinMsg.text}</p>}
           <div className="form-actions">
             <button type="button" className="btn" onClick={closeJoin}>닫기</button>
-            <button type="submit" className="btn btn--primary" disabled={!code.trim()}>참여하기</button>
+            <button type="submit" className="btn btn--primary" disabled={joining || !code.trim()}>
+                {joining ? '참여 중...' : '참여하기'}
+              </button>
           </div>
         </form>
       </Modal>

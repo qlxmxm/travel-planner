@@ -1,6 +1,6 @@
 
 from datetime import datetime
-from sqlalchemy import select
+from sqlalchemy import select, update
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from backend.plans.models import (
@@ -10,6 +10,9 @@ from backend.plans.models import (
 from backend.plans.schemas import (
     PlanCreate, PlanUpdate, BudgetCreate, BudgetUpdate
 )
+
+
+from zoneinfo import ZoneInfo
 
 
 # ==================================================
@@ -57,6 +60,24 @@ class PlanCrud:
         await db.delete(db_plan)
         await db.flush()
         return db_plan
+
+
+    @staticmethod
+    async def complete_expired_plans(db: AsyncSession):
+        now = datetime.now(ZoneInfo("Asia/Seoul")).replace(tzinfo=None)
+
+        stmt = (
+            update(Plans)
+            .where(
+                Plans.p_end < now,
+                Plans.p_status.is_(False),
+            )
+            .values(p_status=True)
+        )
+
+        result = await db.execute(stmt)
+        await db.flush()
+        return result.rowcount
 
 
 # ==================================================

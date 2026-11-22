@@ -1,48 +1,221 @@
-// [여행계획] 멤버 탭: 멤버 목록 + 초대 코드(복사, 방장은 새로 만들기) + 방장의 멤버 내보내기. 멤버만 볼 수 있어요.
-// 초대 코드는 만료일(invite_expire)이 지나면 쓸 수 없고, 코드로 참여하는 곳은 "여행계획" 목록의 [초대 코드로 참여] 입니다.
-// TODO: POST /plans/{id}/invites, GET /plans/{id}/members, DELETE /plans/{id}/members/{u_id} 연결, 권한 체크
-import { useState } from 'react';
+
+import { useEffect, useState } from 'react';
 import { useOutletContext } from 'react-router-dom';
 import Avatar from '../../components/common/Avatar.jsx';
 import EmptyState from '../../components/common/EmptyState.jsx';
 import { sampleMembers } from '../../data/sampleTrips.js';
-
-const rand = () => Math.random().toString(36).slice(2, 6).toUpperCase().padEnd(4, 'X');
-const newCode = () => `${rand()}-${rand()}`; // 예: 7K2P-Q9XD (영문·숫자만)
-const plus7 = () => new Date(Date.now() + 7 * 864e5).toISOString().slice(0, 10);
+import { request } from '../../api/client.js';
 
 export default function MembersTab() {
   const { trip, canEdit, owner } = useOutletContext();
-  const [members, setMembers] = useState(() => sampleMembers.filter((m) => trip.member_ids.includes(m.user_id)).map((m) => ({ ...m, role: m.user_id === trip.owner_id ? '방장' : '참여자' })));
-  const [invite, setInvite] = useState({ code: trip.invite_code, expire: trip.invite_expire });
-  const [copied, setCopied] = useState(false);
+  const planId = trip.p_id ?? trip.trip_id;
 
-  if (!canEdit) return <EmptyState icon="🔒" title="멤버만 볼 수 있어요" description="멤버 정보는 이 여행의 멤버에게만 보여요." />;
+  const [members, setMembers] = useState(() =>
+    sampleMembers
+      .filter((m) => trip.member_ids.includes(m.user_id))
+      .map((m) => ({
+        ...m,
+        role: m.user_id === trip.owner_id ? '방장' : '참여자',
+      }))
+  );
 
-  const copy = async () => {
-    try { await navigator.clipboard.writeText(invite.code); } catch { /* 복사 권한이 없어도 화면 표시는 진행 */ }
-    setCopied(true); setTimeout(() => setCopied(false), 1500);
+  const [invites, setInvites] = useState([]);
+  const [loading, setLoading] = useState(false);
+  const [creating, setCreating] = useState(false);
+  const [copiedId, setCopiedId] = useState(null);
+  const [error, setError] = useState('');
+
+  useEffect(() => {
+    if (!owner) return;
+
+    let cancelled = false;
+
+    async function loadInvites() {
+      setLoading(true);
+      setError('');
+
+      try {
+        const data = await request(`/plans/${planId}/invites`);
+
+        if (!cancelled) {
+          setInvites(data);
+        }
+      } catch (err) {
+        if (!cancelled) {
+          setError(err.message || '초대 코드를 불러오지 못했습니다.');
+        }
+      } finally {
+        if (!cancelled) setLoading(false);
+      }
+    }
+
+    loadInvites();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [planId, owner]);
+
+  const createInvite = async () => {
+    if (creating) return;
+
+    setCreating(true);
+    setError('');
+
+    try {
+      const invite = await request(`/plans/${planId}/invites`, {
+        method: 'POST',
+      });
+
+      setInvites((prev) => [invite, ...prev]);
+    } catch (err) {
+      setError(err.message || '초대 코드 발급에 실패했습니다.');
+    } finally {
+      setCreating(false);
+    }
   };
+
+  const copyInvite = async (invite) => {
+    try {
+      await navigator.clipboard.writeText(invite.i_code);
+      setCopiedId(invite.i_id);
+    } catch {
+      setError('초대 코드 복사에 실패했습니다.');
+    }
+  };
+
+  const getInviteStatus = (invite) => {
+    if (invite.i_used) return '사용 완료';
+
+    // 백엔드에서 UTC 기준으로 저장한다는 전제
+    const expiresAt = new Date(`${invite.i_expire.replace(' ', 'T').replace(/Z$/, '')}Z`);
+
+    if (expiresAt <= new Date()) return '기간 만료';
+    return '사용 가능';
+  };
+
+  if (!canEdit) {
+    return (
+      <EmptyState
+        icon="🔒"
+        title="멤버만 볼 수 있어요"
+        description="멤버 정보는 여행 멤버에게만 보여요."
+      />
+    );
+  }
 
   return (
     <>
       <section className="card invite-box">
         <div>
-          <span>초대 코드</span>
-          <b>{invite.code}</b>
-          <small>{invite.expire}까지 사용할 수 있어요</small>
+          <h3>초대 코드</h3>
+          <p>코드 하나당 한 명만 참여할 수 있어요.</p>
         </div>
-        <div className="invite-box__btns">
-          <button type="button" className="btn" onClick={copy}>{copied ? '복사됨' : '복사'}</button>
-          {owner && <button type="button" className="btn" onClick={() => setInvite({ code: newCode(), expire: plus7() })}>새 코드 만들기</button>}
-        </div>
+
+        {owner && (
+          <button
+            type="button"
+            className="btn btn--primary"
+            onClick={createInvite}
+            disabled={creating}
+          >
+            {creating ? '발급 중...' : '새 코드 만들기'}
+          </button>
+        )}
       </section>
-      <ul className="card">
+
+      {error && (
+        <p className="form-error" role="alert">
+          {error}
+        </p>
+      )}
+
+      {owner && (
+        <section className="card" style={{ padding: 20, marginTop: 16 }}>
+          <h3>발급된 초대 코드</h3>
+
+          {loading ? (
+            <p>초대 코드를 불러오는 중입니다.</p>
+          ) : invites.length === 0 ? (
+            <p>아직 발급된 초대 코드가 없습니다.</p>
+          ) : (
+            <ul>
+              {invites.map((invite) => {
+                const status = getInviteStatus(invite);
+                const available = status === '사용 가능';
+
+                return (
+                  <li
+                    key={invite.i_id}
+                    style={{
+                      padding: '14px 0',
+                      borderBottom: '1px solid var(--line)',
+                      display: 'flex',
+                      justifyContent: 'space-between',
+                      alignItems: 'center',
+                      gap: 12,
+                    }}
+                  >
+                    <div>
+                      <strong>{invite.i_code}</strong>
+                      <p>{status}</p>
+                      <small>
+                        만료일: {invite.i_expire.slice(0, 16)} (UTC)
+                      </small>
+                    </div>
+
+                    <button
+                      type="button"
+                      className="btn"
+                      disabled={!available}
+                      onClick={() => copyInvite(invite)}
+                    >
+                      {copiedId === invite.i_id ? '복사됨' : '복사'}
+                    </button>
+                  </li>
+                );
+              })}
+            </ul>
+          )}
+        </section>
+      )}
+
+      {!owner && (
+        <p>초대 코드는 여행 방장만 발급할 수 있습니다.</p>
+      )}
+
+      <ul className="card" style={{ marginTop: 16 }}>
         {members.map((m) => (
-          <li key={m.user_id} style={{ padding: '16px 22px', borderBottom: '1px solid var(--line)', display: 'flex', alignItems: 'center', gap: 12 }}>
-            <Avatar name={m.user_name} /><b>{m.user_name}</b>
-            <span style={{ marginLeft: 'auto', color: 'var(--ink-sub)' }}>{m.role}</span>
-            {owner && m.role !== '방장' && <button type="button" className="btn btn--text" onClick={() => setMembers((l) => l.filter((x) => x.user_id !== m.user_id))}>내보내기</button>}
+          <li
+            key={m.user_id}
+            style={{
+              padding: '16px 22px',
+              borderBottom: '1px solid var(--line)',
+              display: 'flex',
+              alignItems: 'center',
+              gap: 12,
+            }}
+          >
+            <Avatar name={m.user_name} />
+            <b>{m.user_name}</b>
+
+            <span style={{ marginLeft: 'auto', color: 'var(--ink-sub)' }}>
+              {m.role}
+            </span>
+
+            {owner && m.role !== '방장' && (
+              <button
+                type="button"
+                className="btn btn--text"
+                onClick={() =>
+                  setMembers((prev) =>
+                    prev.filter((item) => item.user_id !== m.user_id)
+                  )
+                }
+              >
+                내보내기
+              </button>
+            )}
           </li>
         ))}
       </ul>

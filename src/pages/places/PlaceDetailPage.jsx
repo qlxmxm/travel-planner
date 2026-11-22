@@ -3,7 +3,6 @@
 // 화면 조립만 하고, 리뷰 상태는 useReviews, 각 영역은 PlaceInfo / ReviewForm / ReviewItem 이 맡습니다.
 // TODO: GET /places/{l_id}, 리뷰 API 연결, 권한 체크(본인 리뷰만)
 import { Link, useParams } from 'react-router-dom';
-import { places } from '../../data/samplePlaces.js';
 import { useAuth } from '../../context/AuthContext.jsx';
 import EmptyState from '../../components/common/EmptyState.jsx';
 import PlaceInfo from './PlaceInfo.jsx';
@@ -11,17 +10,29 @@ import ReviewForm from './ReviewForm.jsx';
 import ReviewItem from './ReviewItem.jsx';
 import useReviews from './useReviews.js';
 import { summarizeReviews } from './placeUtils.js';
+import { useState, useEffect } from 'react';
+import { getLocation } from '../../api/locationAPI.js';
+
+
 
 export default function PlaceDetailPage() {
   const placeId = Number(useParams().placeId);
   const { user } = useAuth();
-  const place = places.find((item) => item.l_id === placeId);
   const { reviews, myReview, addReview, updateReview, deleteReview } = useReviews(placeId, user);
+  const[place, setPlace]=useState(null);
+  const[loading, setLoading] = useState(true)
+  useEffect(()=>{
+    getLocation(placeId).then((data) => {setPlace(data); setLoading(false)})
+                        .catch(() => {setLoading(false)})
+  },[placeId]);
+
+  if (loading) {
+  return <p>불러오는 중...</p>;
+  }
 
   if (!place) {
     return <EmptyState icon="📍" title="장소를 찾을 수 없어요"><Link to="/places" className="btn">장소 목록으로</Link></EmptyState>;
   }
-
   return (
     <article className="pd">
       <Link to="/places" className="pd__back">← 장소 목록</Link>
