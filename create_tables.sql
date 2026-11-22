@@ -98,7 +98,7 @@ CREATE TABLE IF NOT EXISTS plan_details (
     pd_id       INT          NOT NULL AUTO_INCREMENT,
     p_id        INT          NOT NULL,
     l_id        INT          NULL,
-    visit_time  DATETIME     NULL,
+    visit_time  DATETIME     NOT NULL,
     orders      INT          NOT NULL,
     memo        VARCHAR(255) NULL,
     PRIMARY KEY (pd_id),
@@ -120,7 +120,7 @@ CREATE TABLE IF NOT EXISTS budgets (
 CREATE TABLE IF NOT EXISTS expenses (
     e_id       INT          NOT NULL AUTO_INCREMENT,
     b_id       INT          NOT NULL,
-    e_content  VARCHAR(255) NULL,
+    e_content  VARCHAR(255) NOT NULL,
     e_amount   INT          NOT NULL,
     e_time     DATETIME     NOT NULL DEFAULT CURRENT_TIMESTAMP,
     PRIMARY KEY (e_id),
