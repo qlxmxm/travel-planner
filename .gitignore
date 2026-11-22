@@ -1,3 +1,9 @@
 node_modules
 dist
 .env
+
+# understand-anything 지식 그래프 (로컬 전용)
+.ua/
+
+# macOS Finder 설정 파일
+.DS_Store

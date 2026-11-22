@@ -9,7 +9,7 @@ from backend.plans.scheduler import scheduler, update_completed_plans
 from backend.login.router import router as login_router
 from backend.plans.router import router as plans_router         # [여행계획]
 from backend.journals.router import router as journals_router   # [여행기]
-# from backend.location.router import router as location_router    # [장소]
+from backend.location.router import router as location_router    # [장소]
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
@@ -39,7 +39,7 @@ app.add_middleware(
 app.include_router(login_router, prefix="/api")
 app.include_router(plans_router, prefix="/api")
 app.include_router(journals_router, prefix="/api")
-# app.include_router(location_router, prefix="/api")
+app.include_router(location_router, prefix="/api")
 
 
 @app.get("/api/health")

@@ -33,6 +33,7 @@ class JournalUpdate(BaseModel):
 class JournalResponse(JournalCreate):
     """여행기 조회 응답"""
     j_id: int
+    p_id: Optional[int] = None   # 원본 계획이 삭제되면 NULL
     p_create: datetime
 
     model_config = ConfigDict(from_attributes=True)

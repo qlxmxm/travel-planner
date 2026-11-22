@@ -6,7 +6,7 @@ from backend.db import get_db
 from backend.login.models import User
 from backend.login.schemas import LoginIn, MessageOut, RegisterIn, TokenOut, UserOut
 from backend.login.security import create_access_token, get_current_user
-from backend.login.service import authenticate_user, create_user
+from backend.login.service import authenticate_user, clear_token, create_user, save_token
 
 router = APIRouter(tags=["로그인"])
 
@@ -19,12 +19,15 @@ async def register(body: RegisterIn, db: AsyncSession = Depends(get_db)):
 @router.post("/auth/login", response_model=TokenOut)
 async def login(body: LoginIn, db: AsyncSession = Depends(get_db)):
     user = await authenticate_user(db, body.u_email, body.u_pw)
-    return TokenOut(access_token=create_access_token(user.u_id))
+    token = create_access_token(user.u_id)
+    await save_token(db, user, token)
+    return TokenOut(access_token=token)
 
 
 @router.post("/auth/logout", response_model=MessageOut)
-async def logout(user: User = Depends(get_current_user)):
-    # JWT는 서버에 저장하지 않으므로 할 일은 없습니다. 프론트가 저장한 토큰을 지우면 로그아웃입니다.
+async def logout(user: User = Depends(get_current_user), db: AsyncSession = Depends(get_db)):
+    # DB의 u_token 을 비웁니다. (프론트도 저장한 토큰을 지웁니다)
+    await clear_token(db, user)
     return MessageOut(message="로그아웃 되었습니다")
 
 

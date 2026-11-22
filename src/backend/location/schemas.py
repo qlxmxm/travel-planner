@@ -7,7 +7,7 @@ from pydantic import AliasChoices, BaseModel, Field
 
 # ───────── 장소 (조회만 가능) ─────────
 
-class PlaceListOut(BaseModel):
+class LocationListOut(BaseModel):
     """38 GET /places 응답 배열의 한 칸"""
     l_id: int
     l_category: str
@@ -20,7 +20,7 @@ class PlaceListOut(BaseModel):
     model_config = {"from_attributes": True}
 
 
-class PlaceDetailOut(BaseModel):
+class LocationDetailOut(BaseModel):
     """39 GET /places/{l_id} 응답"""
     l_id: int
     l_category: str

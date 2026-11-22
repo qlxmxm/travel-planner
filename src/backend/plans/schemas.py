@@ -29,6 +29,7 @@ class PlanUpdate(BaseModel):
     loc: str | None = Field(None, min_length=1, max_length=100)
     p_start: datetime | None = None
     p_end: datetime | None = None
+    p_status: bool | None = None
 
 
 class PlanInDB(PlanBase):
@@ -190,5 +191,57 @@ class ExpenseUpdate(BaseModel):
 class ExpenseInDB(ExpenseCreate):
     e_id: int
     e_time: datetime
+
+    model_config = ConfigDict(from_attributes=True)
+
+
+# ---------- 지출 (expenses) ----------
+class ExpenseBase(BaseModel):
+    b_id: int
+    e_content: str = Field(max_length=255)
+    e_amount: int = Field(ge=0)          # 0원 허용 (삭제가 아니라 금액 0으로 수정 가능)
+    e_time: datetime
+
+
+class ExpenseCreate(ExpenseBase):
+    pass
+
+
+class ExpenseUpdate(BaseModel):
+    b_id: int | None = None
+    e_content: str | None = Field(default=None, max_length=255)
+    e_amount: int | None = Field(default=None, ge=0)
+    e_time: datetime | None = None
+
+
+class ExpenseInDB(ExpenseBase):
+    e_id: int
+
+    model_config = ConfigDict(from_attributes=True)
+
+
+# ---------- 상세 일정 (plan_details) ----------
+class PlanDetailBase(BaseModel):
+    p_id: int
+    l_id: int | None = None              # 장소 없이 메모만 있는 일정 허용
+    visit_time: datetime
+    orders: int = Field(ge=0)            # 방문 순서
+    memo: str | None = Field(default=None, max_length=100)
+
+
+class PlanDetailCreate(PlanDetailBase):
+    pass
+
+
+class PlanDetailUpdate(BaseModel):
+    p_id: int | None = None
+    l_id: int | None = None
+    visit_time: datetime | None = None
+    orders: int | None = Field(default=None, ge=0)
+    memo: str | None = Field(default=None, max_length=100)
+
+
+class PlanDetailInDB(PlanDetailBase):
+    pd_id: int
 
     model_config = ConfigDict(from_attributes=True)
