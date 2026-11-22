@@ -11,10 +11,8 @@ from backend.plans.schemas import (
     PlanCreate, PlanUpdate, BudgetCreate, BudgetUpdate
 )
 
-from datetime import datetime
-from zoneinfo import ZoneInfo
 
-now = datetime.now(ZoneInfo("Asia/Seoul")).replace(tzinfo=None)
+from zoneinfo import ZoneInfo
 
 
 # ==================================================
@@ -66,14 +64,17 @@ class PlanCrud:
 
     @staticmethod
     async def complete_expired_plans(db: AsyncSession):
+        now = datetime.now(ZoneInfo("Asia/Seoul")).replace(tzinfo=None)
+
         stmt = (
             update(Plans)
             .where(
-                Plans.p_end < datetime.now(),
+                Plans.p_end < now,
                 Plans.p_status.is_(False),
             )
             .values(p_status=True)
         )
+
         result = await db.execute(stmt)
         await db.flush()
         return result.rowcount
