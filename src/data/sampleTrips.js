@@ -1,4 +1,4 @@
-// [여행계획] 화면 모양 확인용 가짜 데이터. API가 연결되면 지우고 실제 데이터로 교체하세요.
+// [홈 화면 소개용] 홈 화면(HomePage)의 기능 소개 장면에서만 쓰는 예시 데이터입니다. 실제 여행 데이터는 api/planApi.js 로 서버에서 가져옵니다.
 // 로그인한 사용자(AuthContext)는 user_id 1 '홍길동' 입니다. author_id 가 1이면 "내가 쓴 글"로 취급합니다.
 import { photos } from './photos.js';
 

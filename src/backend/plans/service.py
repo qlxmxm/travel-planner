@@ -296,6 +296,15 @@ class PlanMemberService:
         return await PlanMemberCrud.get_by_id(db, member_id)
 
     @staticmethod
+    async def get_members_with_names(db: AsyncSession, plan_id: int):
+        await PlanValidator.check_plan(db, plan_id)
+        rows = await PlanMemberCrud.get_with_names(db, plan_id)
+        return [
+            {"pm_id": m.pm_id, "p_id": m.p_id, "u_id": m.u_id, "role": m.role, "u_name": name}
+            for m, name in rows
+        ]
+
+    @staticmethod
     async def get_members_by_plan(db: AsyncSession, plan_id: int):
         await PlanValidator.check_plan(db, plan_id)
         return await PlanMemberCrud.get_by_plan_id(db, plan_id)

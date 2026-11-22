@@ -91,6 +91,10 @@ class PlanMemberInDB(PlanMemberCreate):
     model_config = ConfigDict(from_attributes=True)
 
 
+class PlanMemberOut(PlanMemberInDB):
+    u_name: str | None = None   # 화면에 보여줄 멤버 이름 (users.u_name)
+
+
 # ==================================================
 # 4. 해시태그 (hashtag)
 # ==================================================
@@ -129,14 +133,14 @@ class PlanDetailCreate(BaseModel):
     l_id: int | None = None
     visit_time: datetime
     orders: int = Field(..., ge=0)
-    memo: str | None = Field(None, max_length=100)
+    memo: str | None = Field(None, max_length=255)
 
 
 class PlanDetailUpdate(BaseModel):
     l_id: int | None = None
     visit_time: datetime | None = None
     orders: int | None = Field(None, ge=0)
-    memo: str | None = Field(None, max_length=100)
+    memo: str | None = Field(None, max_length=255)
 
 
 class PlanDetailInDB(PlanDetailCreate):
@@ -226,7 +230,7 @@ class PlanDetailBase(BaseModel):
     l_id: int | None = None              # 장소 없이 메모만 있는 일정 허용
     visit_time: datetime
     orders: int = Field(ge=0)            # 방문 순서
-    memo: str | None = Field(default=None, max_length=100)
+    memo: str | None = Field(default=None, max_length=255)
 
 
 class PlanDetailCreate(PlanDetailBase):
@@ -238,7 +242,7 @@ class PlanDetailUpdate(BaseModel):
     l_id: int | None = None
     visit_time: datetime | None = None
     orders: int | None = Field(default=None, ge=0)
-    memo: str | None = Field(default=None, max_length=100)
+    memo: str | None = Field(default=None, max_length=255)
 
 
 class PlanDetailInDB(PlanDetailBase):

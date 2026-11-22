@@ -6,7 +6,7 @@ from backend.db import get_db
 from backend.plans.schemas import (
     PlanCreate, PlanUpdate, PlanInDB,
     InviteCreate, InviteVerify, InviteInDB,
-    PlanMemberCreate, PlanMemberUpdate, PlanMemberInDB,
+    PlanMemberCreate, PlanMemberUpdate, PlanMemberInDB, PlanMemberOut,
     HashtagCreate, HashtagInDB,
     PlanHashtagCreate, PlanHashtagInDB,
     PlanDetailCreate, PlanDetailUpdate, PlanDetailInDB,
@@ -25,6 +25,14 @@ from backend.plans.service import (
 )
 
 router = APIRouter(prefix="/plans", tags=["여행 계획"])
+
+
+# 주의: 고정 경로(/hashtags)는 /{plan_id} 보다 먼저 선언해야 함 (아니면 'hashtags'가 plan_id로 해석되어 422)
+@router.get("/hashtags", response_model=list[HashtagInDB])
+async def get_all_hashtags(
+    db: AsyncSession = Depends(get_db),
+):
+    return await HashtagService.get_all_hashtags(db)
 
 
 # ==================================================
@@ -190,13 +198,13 @@ async def create_member(
 
 @router.get(
     "/{plan_id}/members",
-    response_model=list[PlanMemberInDB],
+    response_model=list[PlanMemberOut],
 )
 async def get_members_by_plan(
     plan_id: int,
     db: AsyncSession = Depends(get_db),
 ):
-    return await PlanMemberService.get_members_by_plan(db, plan_id)
+    return await PlanMemberService.get_members_with_names(db, plan_id)
 
 
 @router.get(
@@ -258,13 +266,6 @@ async def create_hashtag(
     db: AsyncSession = Depends(get_db),
 ):
     return await HashtagService.create_hashtag(db, data)
-
-
-@router.get("/hashtags", response_model=list[HashtagInDB])
-async def get_all_hashtags(
-    db: AsyncSession = Depends(get_db),
-):
-    return await HashtagService.get_all_hashtags(db)
 
 
 @router.get("/hashtags/{hashtag_id}", response_model=HashtagInDB)

@@ -1,6 +1,6 @@
 
 from datetime import datetime
-from sqlalchemy import select
+from sqlalchemy import or_, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from backend.plans.models import (
@@ -23,6 +23,9 @@ class PlanCrud:
         db_plan = Plans(**plan.model_dump(), p_status=False)
         db.add(db_plan)
         await db.flush()
+        # 만든 사람은 자동으로 방장 멤버가 된다 (멤버 목록/접근 권한이 한 곳에서 돌아가도록)
+        db.add(PlanMembers(p_id=db_plan.p_id, u_id=db_plan.u_id, role="방장"))
+        await db.flush()
         return db_plan
 
     @staticmethod
@@ -32,7 +35,12 @@ class PlanCrud:
     @staticmethod
     async def get_by_user_id(db: AsyncSession, user_id: int):
         result = await db.execute(
-            select(Plans).where(Plans.u_id == user_id).order_by(Plans.p_id.desc())
+            select(Plans)
+            .where(or_(
+                Plans.u_id == user_id,  # 내가 만든 여행 + 초대 코드로 참여한 여행
+                Plans.p_id.in_(select(PlanMembers.p_id).where(PlanMembers.u_id == user_id)),
+            ))
+            .order_by(Plans.p_id.desc())
         )
         return result.scalars().all()
 
@@ -159,6 +167,17 @@ class PlanMemberCrud:
             .order_by(PlanMembers.pm_id)
         )
         return result.scalars().all()
+
+    @staticmethod
+    async def get_with_names(db: AsyncSession, plan_id: int):
+        from backend.login.models import User
+        result = await db.execute(
+            select(PlanMembers, User.u_name)
+            .join(User, User.u_id == PlanMembers.u_id)
+            .where(PlanMembers.p_id == plan_id)
+            .order_by(PlanMembers.pm_id)
+        )
+        return [(m, name) for m, name in result.all()]
 
     @staticmethod
     async def get_by_plan_and_user(
