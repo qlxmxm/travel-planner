@@ -321,14 +321,18 @@ class JournalPlanService:
                     )
                 )
 
+            
             await JournalItemCrud.create_many(db, journal_items)
+
+            journal_id = journal.j_id
             await db.commit()
 
         except Exception:
             await db.rollback()
             raise
 
-        return await JournalService.get_journal_detail(db, journal.j_id)
+        return await JournalService.get_journal_detail(db, journal_id)
+
 
 
 # ==================================================
