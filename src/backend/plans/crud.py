@@ -387,7 +387,7 @@ class BudgetCrud:
 
     @staticmethod
     async def create(db: AsyncSession, budget: BudgetCreate):
-        db_budget = Budgets(**budget.model_dump())
+        db_budget = Budgets(**budget.model_dump(exclude_none=True))
         db.add(db_budget)
         await db.flush()
         return db_budget
