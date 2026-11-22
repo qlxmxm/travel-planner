@@ -362,7 +362,10 @@ class JournalService:
         items = await JournalItemCrud.get_by_journal(db, j_id)
         comments = await JournalCommentCrud.get_by_journal(db, j_id)
 
-        plan = await JournalPlanCrud.get_plan(db, journal.p_id)
+        plan = (
+            await JournalPlanCrud.get_plan(db, journal.p_id)
+            if journal.p_id is not None else None
+        )
         start_date = plan.p_start if plan else None
 
         return {

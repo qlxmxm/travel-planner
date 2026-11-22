@@ -44,7 +44,7 @@ class hashtag(Base):
     __tablename__ = "hashtag"
 
     h_id: Mapped[int] = mapped_column(primary_key=True)
-    h_name: Mapped[str] = mapped_column(String(100), nullable=False)
+    h_name: Mapped[str] = mapped_column(String(100), nullable=False, unique=True)
 
 
 class plan_hashtag(Base):
@@ -65,7 +65,7 @@ class plan_details(Base):
     )
     visit_time: Mapped[datetime] = mapped_column(TIMESTAMP, nullable=False)
     orders: Mapped[int] = mapped_column(nullable=False)
-    memo: Mapped[Optional[str]] = mapped_column(String(100), nullable=True)
+    memo: Mapped[Optional[str]] = mapped_column(String(255), nullable=True)
 
 
 class Budgets(Base):
