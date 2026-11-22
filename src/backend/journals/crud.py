@@ -1,20 +1,30 @@
 
-from sqlalchemy import select, delete
+from sqlalchemy import delete, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from backend.journals import journals, journals_item, journals_comment
 from backend.journals.schema import (
-    JournalCreate, JournalUpdate,
-    JournalItemCreate, JournalItemUpdate,
-    JournalCommentCreate, JournalCommentUpdate
+    JournalCreate,
+    JournalUpdate,
+    JournalItemCreate,
+    JournalItemUpdate,
+    JournalCommentCreate,
+    JournalCommentUpdate,
 )
-from backend.plans.models import Plans, PlanMembers, plan_details
+from backend.plans.models import (
+    Plans,
+    PlanMembers,
+    plan_details,
+    plan_hashtag,
+    hashtag,
+)
 from backend.location.models import Location
 
 
 # ==================================================
 # 1. 여행계획 조회 CRUD
 # ==================================================
+
 class JournalPlanCrud:
 
     @staticmethod
@@ -26,29 +36,42 @@ class JournalPlanCrud:
         result = await db.execute(
             select(PlanMembers).where(
                 PlanMembers.p_id == p_id,
-                PlanMembers.u_id == u_id
+                PlanMembers.u_id == u_id,
             )
         )
         return result.scalars().first()
 
     @staticmethod
     async def get_plan_details(db: AsyncSession, p_id: int):
+        """장소가 연결되지 않은 일정도 포함하여 조회"""
         result = await db.execute(
             select(plan_details, Location.l_name)
-            .join(Location, plan_details.l_id == Location.l_id)
+            .outerjoin(Location, plan_details.l_id == Location.l_id)
             .where(plan_details.p_id == p_id)
             .order_by(
                 plan_details.visit_time,
                 plan_details.orders,
-                plan_details.pd_id
+                plan_details.pd_id,
             )
         )
         return result.all()
 
+    @staticmethod
+    async def get_plan_hashtags(db: AsyncSession, p_id: int):
+        """기존 여행계획에 연결된 해시태그 조회"""
+        result = await db.execute(
+            select(hashtag)
+            .join(plan_hashtag, plan_hashtag.h_id == hashtag.h_id)
+            .where(plan_hashtag.p_id == p_id)
+            .order_by(hashtag.h_id)
+        )
+        return result.scalars().all()
+
 
 # ==================================================
-# 2. 여행기 CRUD
+# 2. 여행기 CRUD (journals)
 # ==================================================
+
 class JournalCrud:
 
     @staticmethod
@@ -63,7 +86,11 @@ class JournalCrud:
         return await db.get(journals, j_id)
 
     @staticmethod
-    async def get_list(db: AsyncSession, skip: int = 0, limit: int = 100):
+    async def get_list(
+        db: AsyncSession,
+        skip: int = 0,
+        limit: int = 100,
+    ):
         result = await db.execute(
             select(journals)
             .order_by(journals.j_id.desc())
@@ -94,7 +121,7 @@ class JournalCrud:
     async def update(
         db: AsyncSession,
         j_id: int,
-        journal_update: JournalUpdate
+        journal_update: JournalUpdate,
     ):
         db_journal = await JournalCrud.get(db, j_id)
         if db_journal is None:
@@ -121,8 +148,9 @@ class JournalCrud:
 
 
 # ==================================================
-# 3. 여행기 세부 일정 CRUD
+# 3. 여행기 일정 CRUD (journals_item)
 # ==================================================
+
 class JournalItemCrud:
 
     @staticmethod
@@ -135,13 +163,12 @@ class JournalItemCrud:
     @staticmethod
     async def create_many(
         db: AsyncSession,
-        items: list[JournalItemCreate]
+        items: list[JournalItemCreate],
     ):
         db_items = [
             journals_item(**item.model_dump())
             for item in items
         ]
-
         db.add_all(db_items)
         await db.flush()
         return db_items
@@ -158,7 +185,7 @@ class JournalItemCrud:
             .order_by(
                 journals_item.ji_day,
                 journals_item.ji_order,
-                journals_item.ji_id
+                journals_item.ji_id,
             )
         )
         return result.scalars().all()
@@ -167,13 +194,16 @@ class JournalItemCrud:
     async def update(
         db: AsyncSession,
         ji_id: int,
-        item_update: JournalItemUpdate
+        item_update: JournalItemUpdate,
     ):
         db_item = await JournalItemCrud.get(db, ji_id)
         if db_item is None:
             return None
 
         update_data = item_update.model_dump(exclude_unset=True)
+
+        if "ji_rating" in update_data and update_data["ji_rating"] is None:
+            raise ValueError("여행기 별점은 필수입니다.")
 
         for field in ("ji_content", "ji_photo", "ji_rating"):
             if field in update_data:
@@ -203,14 +233,15 @@ class JournalItemCrud:
 
 
 # ==================================================
-# 4. 여행기 댓글 CRUD
+# 4. 여행기 댓글 CRUD (journals_comment)
 # ==================================================
+
 class JournalCommentCrud:
 
     @staticmethod
     async def create(
         db: AsyncSession,
-        comment: JournalCommentCreate
+        comment: JournalCommentCreate,
     ):
         db_comment = journals_comment(**comment.model_dump())
         db.add(db_comment)
@@ -228,7 +259,7 @@ class JournalCommentCrud:
             .where(journals_comment.j_id == j_id)
             .order_by(
                 journals_comment.jc_create,
-                journals_comment.jc_id
+                journals_comment.jc_id,
             )
         )
         return result.scalars().all()
@@ -237,17 +268,13 @@ class JournalCommentCrud:
     async def update(
         db: AsyncSession,
         jc_id: int,
-        comment_update: JournalCommentUpdate
+        comment_update: JournalCommentUpdate,
     ):
         db_comment = await JournalCommentCrud.get(db, jc_id)
         if db_comment is None:
             return None
 
-        update_data = comment_update.model_dump(exclude_unset=True)
-
-        if "jc_content" in update_data:
-            db_comment.jc_content = update_data["jc_content"]
-
+        db_comment.jc_content = comment_update.jc_content
         await db.flush()
         return db_comment
 
@@ -269,3 +296,22 @@ class JournalCommentCrud:
         )
         await db.flush()
         return result.rowcount
+
+
+# ==================================================
+# 5. 여행기 해시태그 조회
+# ==================================================
+
+class JournalHashtagCrud:
+
+    @staticmethod
+    async def get_by_journal(db: AsyncSession, j_id: int):
+        """여행기의 원본 여행계획에 연결된 해시태그 조회"""
+        result = await db.execute(
+            select(hashtag)
+            .join(plan_hashtag, plan_hashtag.h_id == hashtag.h_id)
+            .join(journals, journals.p_id == plan_hashtag.p_id)
+            .where(journals.j_id == j_id)
+            .order_by(hashtag.h_id)
+        )
+        return result.scalars().all()
