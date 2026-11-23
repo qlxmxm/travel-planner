@@ -362,10 +362,16 @@ class JournalPlanService:
                     )
                 )
 
+            
             await JournalItemCrud.create_many(db, journal_items)
+
+            await JournalHashtagCrud.copy_from_plan(
+                db, plan_id, journal.j_id
+            )
 
             journal_id = journal.j_id
             await db.commit()
+
 
         except Exception:
             await db.rollback()
