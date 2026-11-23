@@ -7,7 +7,7 @@ import { useOutletContext } from 'react-router-dom';
 import EmptyState from '../../components/common/EmptyState.jsx';
 import PlaceCard from './PlaceCard.jsx';
 import { placeApi } from '../../api/placeApi.js';
-import { planApi } from '../../api/planApi.js';
+import { scheduleApi } from '../../api/scheduleApi.js';
 import useAsync from '../../hooks/useAsync.js';
 import { PLACE_CATEGORY, placeTabs, summaryOfPlace } from './placeUtils.js';
 
@@ -19,7 +19,7 @@ export default function PlacesTab() {
   const [category, setCategory] = useState(PLACE_CATEGORY.ALL);
   // 일정에 있는 장소 이름 → 같은 이름의 장소를 DB 에서 찾고, 못 찾은 이름은 "기타"로 (여행이 바뀔 때만 다시 불러옴)
   const { data, loading, error, reload } = useAsync(async () => {
-    const schedules = await planApi.listSchedules(trip);
+    const schedules = await scheduleApi.list(trip);
     const byName = new Map();
     schedules.forEach((x) => { const name = (x.place || '').trim(); if (name && !byName.has(name)) byName.set(name, x); });
     const checked = await Promise.all([...byName].map(async ([name, sch]) => ({ name, sch, place: (await placeApi.listPage({ keyword: name, size: 100 })).find((p) => p.l_name === name) })));

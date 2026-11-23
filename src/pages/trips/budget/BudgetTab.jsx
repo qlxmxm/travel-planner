@@ -5,7 +5,7 @@
 import { useCallback, useEffect, useState } from 'react';
 import { useOutletContext } from 'react-router-dom';
 import EmptyState from '../../../components/common/EmptyState.jsx';
-import { planApi } from '../../../api/planApi.js';
+import { budgetApi } from '../../../api/budgetApi.js';
 
 const KINDS = { budget: '예산', add: '추가 예산', used: '지출' };
 const won = (n) => `${n.toLocaleString('ko-KR')}원`;
@@ -22,7 +22,7 @@ export default function BudgetTab() {
   const [draft, setDraft] = useState({ memo: '', amount: '' });
 
   const load = useCallback(async () => {
-    try { setState(await planApi.listBudgetItems(trip.trip_id)); setLoadError(''); }
+    try { setState(await budgetApi.listItems(trip.trip_id)); setLoadError(''); }
     catch (err) { setLoadError(err.message); }
     finally { setLoading(false); }
   }, [trip.trip_id]);
@@ -54,14 +54,14 @@ export default function BudgetTab() {
     const amount = Number(form.amount);
     if (form.kind === 'used' && !form.memo.trim()) return setError('내용을 입력해 주세요.');
     if (!Number.isInteger(amount) || amount <= 0) return setError('금액은 1원 이상의 정수로 입력해 주세요.');
-    const ok = await run(() => planApi.addBudgetItem(trip.trip_id, budgets, { kind: form.kind, memo: form.memo.trim(), amount }));
+    const ok = await run(() => budgetApi.addItem(trip.trip_id, budgets, { kind: form.kind, memo: form.memo.trim(), amount }));
     if (ok) setForm((f) => ({ ...f, memo: '', amount: '' }));
   };
   const save = async (item) => {
     const amount = Number(draft.amount);
     if (!Number.isInteger(amount) || amount < 0) return setError('금액은 0원 이상의 정수로 입력해 주세요.');
     if (item.kind === 'used' && !draft.memo.trim()) return setError('내용을 입력해 주세요.');
-    if (await run(() => planApi.updateBudgetItem(trip.trip_id, item, { memo: draft.memo.trim(), amount }))) setEditId(null);
+    if (await run(() => budgetApi.updateItem(trip.trip_id, item, { memo: draft.memo.trim(), amount }))) setEditId(null);
   };
 
   return (
@@ -109,7 +109,7 @@ export default function BudgetTab() {
                   <b className={i.kind === 'used' ? 'minus' : 'plus'}>{i.kind === 'used' ? '-' : '+'}{won(i.amount)}</b>
                   {canEdit && <span className="budget-list__tools">
                     <button type="button" className="btn btn--text" onClick={() => { setEditId(i.id); setDraft({ memo: i.memo, amount: String(i.amount) }); }}>수정</button>
-                    <button type="button" className="btn btn--text" disabled={busy} onClick={() => run(() => planApi.deleteBudgetItem(trip.trip_id, i))}>삭제</button>
+                    <button type="button" className="btn btn--text" disabled={busy} onClick={() => run(() => budgetApi.deleteItem(trip.trip_id, i))}>삭제</button>
                   </span>}
                 </>
               )}

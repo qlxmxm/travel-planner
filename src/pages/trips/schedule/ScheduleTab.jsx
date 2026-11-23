@@ -7,7 +7,7 @@ import { useOutletContext } from 'react-router-dom';
 import PlanChat from './PlanChat.jsx';
 import PlanFormModal from './PlanFormModal.jsx';
 import Modal from '../../../components/common/Modal.jsx';
-import { planApi } from '../../../api/planApi.js';
+import { scheduleApi } from '../../../api/scheduleApi.js';
 
 const MARKERS = ['var(--m1)', 'var(--m2)', 'var(--m3)', 'var(--m4)', 'var(--m5)'];
 const sortPlans = (list) => [...list].sort((a, b) => a.day - b.day || a.time.localeCompare(b.time));
@@ -23,7 +23,7 @@ export default function ScheduleTab() {
   useEffect(() => {
     let cancelled = false;
     setLoading(true); setLoadError('');
-    planApi.listSchedules(trip)
+    scheduleApi.list(trip)
       .then((list) => { if (cancelled) return; setPlans(list); setDay(list[0]?.day ?? 1); setLoading(false); })
       .catch((err) => { if (!cancelled) { setLoadError(err.message); setLoading(false); } });
     return () => { cancelled = true; };
@@ -41,10 +41,10 @@ export default function ScheduleTab() {
   const save = async (data) => {
     try {
       if (form.plan) {
-        const saved = await planApi.updateSchedule(trip, form.plan.plan_id, data);
+        const saved = await scheduleApi.update(trip, form.plan.plan_id, data);
         setPlans((all) => sortPlans(all.map((p) => (p.plan_id === form.plan.plan_id ? { ...saved, comments: p.comments } : p))));
       } else {
-        const saved = await planApi.createSchedule(trip, data);
+        const saved = await scheduleApi.create(trip, data);
         setPlans((all) => sortPlans([...all, saved]));
       }
       setDay(data.day); setForm(null); setSaveError('');
@@ -52,7 +52,7 @@ export default function ScheduleTab() {
   };
   const remove = async () => {
     try {
-      await planApi.deleteSchedule(trip, removing.plan_id);
+      await scheduleApi.remove(trip, removing.plan_id);
       const left = plans.filter((p) => p.plan_id !== removing.plan_id);
       setPlans(left);
       if (openId === removing.plan_id) setOpenId(null);
@@ -66,7 +66,7 @@ export default function ScheduleTab() {
     const after = fn(before);
     update(id, () => after);
     if (after.title !== before.title) {
-      try { await planApi.updateSchedule(trip, id, after); setSaveError(''); } catch (err) { setSaveError(err.message); update(id, () => before); }
+      try { await scheduleApi.update(trip, id, after); setSaveError(''); } catch (err) { setSaveError(err.message); update(id, () => before); }
     }
   };
 

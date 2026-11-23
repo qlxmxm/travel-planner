@@ -1,4 +1,6 @@
 // [여행기 상세] 맨 위: 제목(수정 중에는 입력칸) + 작성자 · 작성일 · 좋아요 버튼.
+import { dateOnly } from '../../../utils/date.js';
+
 export default function JournalTitle({ editing, creating, journal, draft, onDraftChange, authorName, liked, likeCount, busy, onToggleLike }) {
   return (
     <>
@@ -15,7 +17,7 @@ export default function JournalTitle({ editing, creating, journal, draft, onDraf
       )}
       <div className="jd__meta">
         <span>{authorName}</span>
-        <span>{(journal.p_create || '').slice(0, 10)}</span>
+        <span>{dateOnly(journal.p_create)}</span>
         {!creating && (
           <button
             type="button"

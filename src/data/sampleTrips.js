@@ -32,13 +32,6 @@ export const sampleTrips = [
     plans: [ { plan_id: 401, day: 1, time: '10:00', label: '여행의 시작', place: '제주공항', photo: photos.jeju, title: '렌터카 픽업은 공항 밖 셔틀 타고', comments: [] } ] },
 ];
 
-// ---- 여행계획 공통 도우미 ----
-// is_public: 'Y' 공개(다른 사람도 볼 수 있음) / 'N' 비공개(멤버만)
-export const isMember = (trip, user) => trip.member_ids.includes(user.user_id);
-export const canSee = (trip, user) => trip.is_public === 'Y' || isMember(trip, user);
-// 여행 기간(end_date)이 지났는지 → 지났으면 "여행기에 추가" 버튼이 나타남
-export const isEnded = (trip) => new Date(trip.end_date) < new Date(new Date().toDateString());
-
 // 다른 사람의 여행계획과 이미 끝난 여행 (화면 확인용)
 sampleTrips.push(
   { trip_id: 4, owner_name: '홍길동', is_public: 'Y', hashtags: ['맛집여행', '힐링'], member_ids: [1, 2], invite_code: 'BUSAN-2L6W', invite_expire: '2026-09-30', owner_id: 1, title: '부산 여행', destination: '부산', duration: '2박 3일', start_date: '2026-09-12', end_date: '2026-09-14', members: 2, photo: photos.sunset,

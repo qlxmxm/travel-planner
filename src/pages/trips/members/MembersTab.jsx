@@ -10,7 +10,8 @@ import { useCallback, useEffect, useState } from 'react';
 import { useOutletContext } from 'react-router-dom';
 import Avatar from '../../../components/common/Avatar.jsx';
 import EmptyState from '../../../components/common/EmptyState.jsx';
-import { planApi } from '../../../api/planApi.js';
+import { memberApi } from '../../../api/memberApi.js';
+import { dateOnly } from '../../../utils/date.js';
 
 const rand = () => Math.random().toString(36).slice(2, 6).toUpperCase().padEnd(4, 'X');
 const newCode = () => `${rand()}-${rand()}`; // 예: 7K2P-Q9XD (영문·숫자만)
@@ -29,7 +30,7 @@ function JoinRequestCard({ trip }) {
 
   useEffect(() => {
     let cancelled = false;
-    planApi.myJoinRequest(trip.trip_id)
+    memberApi.myJoinRequest(trip.trip_id)
       .then((r) => { if (!cancelled) setMine(r); })
       .catch((err) => { if (!cancelled) { setMine({ requested: false }); setError(err.message); } });
     return () => { cancelled = true; };
@@ -37,13 +38,13 @@ function JoinRequestCard({ trip }) {
 
   const send = async () => {
     setBusy(true);
-    try { const r = await planApi.requestJoin(trip.trip_id); setMine({ requested: true, jr_id: r.jr_id }); setError(''); }
+    try { const r = await memberApi.requestJoin(trip.trip_id); setMine({ requested: true, jr_id: r.jr_id }); setError(''); }
     catch (err) { setError(err.message); }
     finally { setBusy(false); }
   };
   const cancel = async () => {
     setBusy(true);
-    try { await planApi.removeJoinRequest(trip.trip_id, mine.jr_id); setMine({ requested: false }); setError(''); }
+    try { await memberApi.removeJoinRequest(trip.trip_id, mine.jr_id); setMine({ requested: false }); setError(''); }
     catch (err) { setError(err.message); }
     finally { setBusy(false); }
   };
@@ -83,7 +84,7 @@ function MemberList({ trip, owner, reloadTrip }) {
   const load = useCallback(async () => {
     try {
       // 초대 코드는 방장만 조회할 수 있어서(서버 규칙) 방장일 때만 불러옵니다.
-      const [m, i, r] = await Promise.all([planApi.listMembers(trip.trip_id), owner ? planApi.latestInvite(trip.trip_id) : null, planApi.listJoinRequests(trip.trip_id)]);
+      const [m, i, r] = await Promise.all([memberApi.listMembers(trip.trip_id), owner ? memberApi.latestInvite(trip.trip_id) : null, memberApi.listJoinRequests(trip.trip_id)]);
       setMembers(m); setInvite(i); setRequests(r); setError('');
     } catch (err) { setError(err.message); }
     finally { setLoading(false); }
@@ -99,7 +100,7 @@ function MemberList({ trip, owner, reloadTrip }) {
     catch (err) { setError(err.message); }
   };
   const makeInvite = async () => {
-    try { setInvite(await planApi.createInvite(trip.trip_id, newCode())); setError(''); }
+    try { setInvite(await memberApi.createInvite(trip.trip_id, newCode())); setError(''); }
     catch (err) { setError(err.message); }
   };
 
@@ -110,7 +111,7 @@ function MemberList({ trip, owner, reloadTrip }) {
         <div>
           <span>초대 코드</span>
           <b>{invite ? invite.i_code : '없음'}</b>
-          <small>{invite ? `${String(invite.i_expire).slice(0, 10)}까지, 한 번만 사용할 수 있어요` : '아직 사용할 수 있는 코드가 없어요'}</small>
+          <small>{invite ? `${dateOnly(invite.i_expire)}까지, 한 번만 사용할 수 있어요` : '아직 사용할 수 있는 코드가 없어요'}</small>
         </div>
         <div className="invite-box__btns">
           {invite && <button type="button" className="btn" onClick={copy}>{copied ? '복사됨' : '복사'}</button>}
@@ -130,8 +131,8 @@ function MemberList({ trip, owner, reloadTrip }) {
             {owner
               ? (
                 <>
-                  <button type="button" className="btn btn--primary btn--small" onClick={() => run(() => planApi.approveJoinRequest(trip.trip_id, r.jr_id))}>멤버 추가</button>
-                  <button type="button" className="btn btn--text" onClick={() => run(() => planApi.removeJoinRequest(trip.trip_id, r.jr_id))}>거절</button>
+                  <button type="button" className="btn btn--primary btn--small" onClick={() => run(() => memberApi.approveJoinRequest(trip.trip_id, r.jr_id))}>멤버 추가</button>
+                  <button type="button" className="btn btn--text" onClick={() => run(() => memberApi.removeJoinRequest(trip.trip_id, r.jr_id))}>거절</button>
                 </>
               )
               : <small className="members-list__wait">방장이 승인하면 멤버가 돼요</small>}
@@ -151,9 +152,9 @@ function MemberList({ trip, owner, reloadTrip }) {
                 {owner && m.u_id !== trip.owner_id && (
                   <>
                     {label === '참여자'
-                      ? <button type="button" className="btn btn--small" onClick={() => run(() => planApi.setMemberRole(trip.trip_id, m.pm_id, '편집자'))}>편집자 지정</button>
-                      : <button type="button" className="btn btn--small" onClick={() => run(() => planApi.setMemberRole(trip.trip_id, m.pm_id, '멤버'))}>참여자로 변경</button>}
-                    <button type="button" className="btn btn--text" onClick={() => run(() => planApi.removeMember(trip.trip_id, m.pm_id))}>내보내기</button>
+                      ? <button type="button" className="btn btn--small" onClick={() => run(() => memberApi.setMemberRole(trip.trip_id, m.pm_id, '편집자'))}>편집자 지정</button>
+                      : <button type="button" className="btn btn--small" onClick={() => run(() => memberApi.setMemberRole(trip.trip_id, m.pm_id, '멤버'))}>참여자로 변경</button>}
+                    <button type="button" className="btn btn--text" onClick={() => run(() => memberApi.removeMember(trip.trip_id, m.pm_id))}>내보내기</button>
                   </>
                 )}
               </li>

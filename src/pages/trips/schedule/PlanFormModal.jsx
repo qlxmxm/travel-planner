@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react';
 import Modal from '../../../components/common/Modal.jsx';
 import PhotoPicker from '../../../components/common/PhotoPicker.jsx';
-import { photoKey, photoSrc } from '../../../api/planApi.js';
+import { photoKey, photoSrc } from '../../../api/planMapper.js';
 import { placeApi } from '../../../api/placeApi.js';
 
 export default function PlanFormModal({ open, plan, days, defaultDay, onSave, onClose }) {

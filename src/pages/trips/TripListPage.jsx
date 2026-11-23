@@ -10,6 +10,7 @@ import Modal from '../../components/common/Modal.jsx';
 import { useAuth } from '../../context/AuthContext.jsx';
 import useAsync from '../../hooks/useAsync.js';
 import { planApi } from '../../api/planApi.js';
+import { memberApi } from '../../api/memberApi.js';
 import { tagList } from '../../data/hashtags.js';
 import { isMember } from './tripUtils.js';
 
@@ -46,7 +47,7 @@ export default function TripListPage() {
   const join = async (e) => {
     e.preventDefault();
     try {
-      await planApi.join(code.trim());
+      await memberApi.joinByInvite(code.trim());
       setJoinMsg({ ok: true, text: '여행에 참여했어요!' });
       setCode('');
       reload();

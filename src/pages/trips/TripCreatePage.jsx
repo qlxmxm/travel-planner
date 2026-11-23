@@ -4,7 +4,8 @@
 import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext.jsx';
-import { planApi, durationText, photoKey } from '../../api/planApi.js';
+import { planApi } from '../../api/planApi.js';
+import { durationText, photoKey } from '../../api/planMapper.js';
 import PageHeader from '../../components/common/PageHeader.jsx';
 import TagPicker from '../../components/common/TagPicker.jsx';
 import PhotoPicker from '../../components/common/PhotoPicker.jsx';

@@ -1,5 +1,6 @@
 // [여행기 상세] 댓글 영역: 개수 · 작성 폼 · 댓글 목록(내 댓글은 수정/삭제).
 import Avatar from '../../../components/common/Avatar.jsx';
+import { dateOnly } from '../../../utils/date.js';
 
 const authorOf = (comment) => comment.u_name || `사용자 ${comment.u_id}`;
 
@@ -9,7 +10,7 @@ function CommentItem({ comment, isMine, isEditing, busy, state }) {
       <div className="journal-card__by">
         <Avatar name={authorOf(comment)} />
         <strong>{authorOf(comment)}</strong>
-        <span>{comment.jc_create?.slice(0, 10)}</span>
+        <span>{dateOnly(comment.jc_create)}</span>
       </div>
 
       {isEditing ? (

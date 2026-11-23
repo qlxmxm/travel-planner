@@ -100,7 +100,6 @@ export default function JournalListPage() {
   };
   const writeFrom = async (trip) => {
     try {
-      if (!trip.completed) await planApi.complete(trip.trip_id);
       navigate(`/journals/new/from/${trip.trip_id}`);
     } catch (err) {
       setTripsState({ loading: false, error: err.message });

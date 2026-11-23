@@ -3,7 +3,7 @@
 //  - 새로 쓰기: 여행계획의 일정으로 초안을 만들고 바로 수정 상태로 엽니다.
 import { useEffect, useState } from 'react';
 import { journalApi } from '../../../api/journalApi.js';
-import { photoSrc } from '../../../api/planApi.js';
+import { photoSrc } from '../../../api/planMapper.js';
 
 export default function useJournalDetail({ journalId, tripId, creating, user, setError, draftState }) {
   const [journal, setJournal] = useState(null);
