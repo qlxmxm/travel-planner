@@ -95,7 +95,7 @@ class PlanCrud:
         for model in (Budgets, plan_details, plan_hashtag, PlanMembers, Invite, JoinRequest):
             await db.execute(delete(model).where(model.p_id == plan_id))
 
-        from backend.journals.journal import journals  # 순환 import 방지용으로 함수 안에서 가져옴
+        from backend.journals.models import journals  # 순환 import 방지용으로 함수 안에서 가져옴
         await db.execute(update(journals).where(journals.p_id == plan_id).values(p_id=None))
 
         await db.delete(db_plan)
