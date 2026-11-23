@@ -4,3 +4,27 @@
 .invite-box b { display: block; font-size: 26px; letter-spacing: 2px; margin: 2px 0; }
 .invite-box small { color: var(--ink-mute); font-size: 13px; }
 .invite-box__btns { display: flex; gap: 8px; }
+
+/* 멤버 / 참여 요청 목록 */
+.members-title { display: flex; align-items: center; gap: 8px; margin: 22px 0 10px; font-size: 17px; }
+.members-title em { font-style: normal; font-size: 13px; font-weight: 700; color: var(--ink-sub); background: var(--line); padding: 2px 9px; border-radius: 999px; }
+.members-list li { padding: 16px 22px; border-bottom: 1px solid var(--line); display: flex; align-items: center; gap: 12px; }
+.members-list li:last-child { border-bottom: 0; }
+.members-list__role { margin-left: auto; color: var(--ink-sub); font-size: 14px; }
+.members-list__role--방장 { color: var(--accent-ink); font-weight: 700; }
+.members-list__role--편집자 { color: #1b8a5a; font-weight: 700; }
+.members-list__role + .btn, .members-list__role + .btn--small { margin-left: 0; }
+.members-list__wait { color: var(--ink-mute); font-size: 13px; }
+.members-empty { color: var(--ink-mute); font-size: 14px; justify-content: center; }
+
+/* 공개 여행을 구경하는 사람의 "여행플래너 요청하기" 카드 */
+.join-card { display: flex; flex-direction: column; align-items: center; gap: 10px; text-align: center; padding: 44px 24px 40px;
+  border-radius: 22px; background: linear-gradient(160deg, var(--accent-soft) 0%, #f3f0ff 60%, #fff5f1 100%); border: 1px solid var(--line); }
+.join-card__icon { width: 64px; height: 64px; display: grid; place-items: center; font-size: 30px; border-radius: 50%; background: #fff; box-shadow: 0 6px 18px rgba(43, 196, 234, .25); }
+.join-card__lead { margin: 4px 0 6px; font-size: 18px; font-weight: 700; line-height: 1.5; }
+.join-card__btn { border: 0; cursor: pointer; padding: 15px 38px; border-radius: 999px; font-size: 17px; font-weight: 800; color: #fff;
+  background: linear-gradient(135deg, var(--accent), #6c7bff); box-shadow: 0 10px 24px rgba(43, 196, 234, .38); transition: transform .15s, box-shadow .15s; }
+.join-card__btn:hover:not(:disabled) { transform: translateY(-2px); box-shadow: 0 14px 28px rgba(43, 196, 234, .48); }
+.join-card__btn:disabled { opacity: .6; cursor: default; }
+.join-card__sub { margin-top: -2px; color: var(--ink-mute); font-size: 12px; }
+.join-card__sent { margin: 0 0 6px; color: var(--ink-sub); }

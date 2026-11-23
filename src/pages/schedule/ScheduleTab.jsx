@@ -13,7 +13,7 @@ const MARKERS = ['var(--m1)', 'var(--m2)', 'var(--m3)', 'var(--m4)', 'var(--m5)'
 const sortPlans = (list) => [...list].sort((a, b) => a.day - b.day || a.time.localeCompare(b.time));
 
 export default function ScheduleTab() {
-  const { trip, canEdit = true } = useOutletContext(); // canEdit=false: 공개된 다른 사람의 여행 (읽기 전용)
+  const { trip, canEdit = true, isMember = true } = useOutletContext(); // canEdit: 방장·편집자 / isMember: 멤버(대화 가능) / 둘 다 false: 공개된 다른 사람의 여행 (읽기 전용)
   const [plans, setPlans] = useState([]);
   const [loading, setLoading] = useState(true);
   const [loadError, setLoadError] = useState('');
@@ -34,7 +34,7 @@ export default function ScheduleTab() {
   const [removing, setRemoving] = useState(null); // 삭제 확인 중인 일정
 
   const update = (id, fn) => setPlans((all) => all.map((p) => (p.plan_id === id ? fn(p) : p)));
-  const toggle = (id) => { if (!canEdit) return; if (openId === id) setOpenId(null); else { setShownId(id); setOpenId(id); } };
+  const toggle = (id) => { if (!isMember) return; if (openId === id) setOpenId(null); else { setShownId(id); setOpenId(id); } };
   const shown = plans.find((p) => p.plan_id === shownId);
   const dayPlans = plans.filter((p) => p.day === day);
 
@@ -81,7 +81,7 @@ export default function ScheduleTab() {
           </div>
           {canEdit
             ? <button type="button" className="btn btn--primary btn--small" onClick={() => setForm({})}>+ 일정 추가</button>
-            : <span className="readonly-note">공개된 여행계획이라 읽기만 할 수 있어요</span>}
+            : <span className="readonly-note">{isMember ? '일정은 방장과 편집자만 고칠 수 있어요' : '공개된 여행계획이라 읽기만 할 수 있어요'}</span>}
         </div>
 
         {saveError && <p className="form-error" role="alert">{saveError}</p>}
@@ -102,7 +102,7 @@ export default function ScheduleTab() {
                 </span>
                 <span className="plan__title">
                   <span>{p.title}</span>
-                  {canEdit && <span className="plan__count">💬 {p.comments.length}</span>}
+                  {isMember && <span className="plan__count">💬 {p.comments.length}</span>}
                 </span>
               </button>
               {canEdit && (

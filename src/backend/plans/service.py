@@ -6,6 +6,7 @@ from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from backend.plans.crud import (
+    JoinRequestCrud,
     PlanCrud,
     InviteCrud,
     PlanMemberCrud,
@@ -31,6 +32,13 @@ from backend.plans.schemas import (
     ExpenseUpdate,
 )
 
+
+import secrets
+from datetime import timedelta
+from sqlalchemy import select
+
+from backend.plans.models import Invite, JoinRequest
+from backend.login.models import User
 
 # ==================================================
 # 1. 공통 검증 및 트랜잭션
@@ -65,6 +73,104 @@ class PlanValidator:
         if expense is None:
             raise HTTPException(404, "지출 내역이 없습니다.")
         return expense
+
+    
+OWNER_ROLE = "방장"
+EDITOR_ROLE = "편집자"
+MEMBER_ROLE = "멤버"
+
+
+class PlanAccessService:
+
+    @staticmethod
+    async def require_member(
+        db: AsyncSession,
+        plan_id: int,
+        user_id: int,
+    ):
+        plan = await PlanValidator.check_plan(db, plan_id)
+
+        if plan.u_id == user_id:
+            return plan
+
+        member = await PlanMemberCrud.get_by_plan_and_user(
+            db, plan_id, user_id
+        )
+
+        if member is None:
+            raise HTTPException(
+                403,
+                "해당 여행계획의 작성자 또는 초대된 멤버만 조회할 수 있습니다."
+            )
+
+        return plan
+
+    @staticmethod
+    async def require_owner(
+        db: AsyncSession,
+        plan_id: int,
+        user_id: int,
+    ):
+        plan = await PlanValidator.check_plan(db, plan_id)
+
+        if plan.u_id != user_id:
+            raise HTTPException(
+                403,
+                "여행계획 작성자만 수행할 수 있습니다."
+            )
+
+        return plan
+
+    @staticmethod
+    async def require_editor(
+        db: AsyncSession,
+        plan_id: int,
+        user_id: int,
+    ):
+        """방장 또는 편집자(역할 '편집자')만 통과. 일정·예산·여행 정보 수정에 쓴다."""
+        plan = await PlanValidator.check_plan(db, plan_id)
+
+        if plan.u_id == user_id:
+            return plan
+
+        member = await PlanMemberCrud.get_by_plan_and_user(
+            db, plan_id, user_id
+        )
+
+        if member is None or member.role != EDITOR_ROLE:
+            raise HTTPException(
+                403,
+                "방장 또는 편집자만 수정할 수 있습니다."
+            )
+
+        return plan
+
+    @staticmethod
+    async def require_view(
+        db: AsyncSession,
+        plan_id: int,
+        user_id: int,
+    ):
+        """방장·멤버, 또는 공개(p_public) 여행이면 누구든 통과. 일정·장소처럼 공개되는 정보 조회에 쓴다."""
+        plan = await PlanValidator.check_plan(db, plan_id)
+
+        if plan.p_public or plan.u_id == user_id:
+            return plan
+
+        member = await PlanMemberCrud.get_by_plan_and_user(
+            db, plan_id, user_id
+        )
+
+        if member is None:
+            raise HTTPException(
+                403,
+                "비공개 여행계획입니다. 방장 또는 멤버만 조회할 수 있습니다."
+            )
+
+        return plan
+
+
+
 
 
 class PlanTransaction:
@@ -107,16 +213,20 @@ class PlanService:
             raise
 
     @staticmethod
+    async def get_accessible_plans(db: AsyncSession, user_id: int):
+        return await PlanCrud.get_accessible_plans(db, user_id)
+
+    @staticmethod
+    async def get_public_plans(db: AsyncSession):
+        return await PlanCrud.get_public(db)
+
+    @staticmethod
     async def get_plan_by_id(db: AsyncSession, plan_id: int):
         return await PlanCrud.get_by_id(db, plan_id)
 
     @staticmethod
     async def get_plans_by_user(db: AsyncSession, user_id: int):
         return await PlanCrud.get_by_user_id(db, user_id)
-
-    @staticmethod
-    async def get_public_plans(db: AsyncSession):
-        return await PlanCrud.get_public(db)
 
     @staticmethod
     async def update_plan(
@@ -142,14 +252,14 @@ class PlanService:
         if "p_end" in plan.model_fields_set and plan.p_end is None:
             raise HTTPException(422, "종료 시간은 비울 수 없습니다.")
 
-        if "p_public" in plan.model_fields_set and plan.p_public is None:
-            raise HTTPException(422, "공개 여부는 비울 수 없습니다.")
-
         if "p_title" in plan.model_fields_set and plan.p_title is None:
             raise HTTPException(422, "여행 제목은 비울 수 없습니다.")
 
         if "loc" in plan.model_fields_set and plan.loc is None:
             raise HTTPException(422, "여행 지역은 비울 수 없습니다.")
+
+        if "p_public" in plan.model_fields_set and plan.p_public is None:
+            raise HTTPException(422, "공개 여부는 비울 수 없습니다.")
 
         try:
             updated = await PlanCrud.update_by_id(db, plan_id, plan)
@@ -179,25 +289,36 @@ class PlanService:
 class InviteService:
 
     @staticmethod
-    async def create_invite(db: AsyncSession, data: InviteCreate):
-        await PlanValidator.check_plan(db, data.p_id)
+    async def create_invite(
+        db: AsyncSession,
+        plan_id: int,
+        user_id: int,
+    ):
+        plan = await PlanValidator.check_plan(db, plan_id)
 
-        existing = await InviteCrud.get_by_code(db, data.i_code)
-        if existing is not None:
-            raise HTTPException(409, "이미 사용 중인 초대 코드입니다.")
+        if plan.u_id != user_id:
+            raise HTTPException(403, "방장만 초대 코드를 발급할 수 있습니다.")
 
-        if data.i_expire <= data.i_create:
-            raise HTTPException(422, "초대 코드 만료 시간이 올바르지 않습니다.")
+        now = datetime.now(timezone.utc).replace(tzinfo=None)
+        expires_at = now + timedelta(days=7)
+
+        code_value = secrets.token_hex(6).upper()
+        code = f"{code_value[:6]}-{code_value[6:]}"
 
         try:
             invite = await InviteCrud.create(
-                db,
-                data.p_id,
-                data.i_code,
-                data.i_create,
-                data.i_expire,
+                db=db,
+                plan_id=plan_id,
+                code=code,
+                created_at=now,
+                expires_at=expires_at,
             )
             return await PlanTransaction.save(db, invite)
+
+        except IntegrityError:
+            await db.rollback()
+            raise HTTPException(409, "코드 생성이 중복되었습니다. 다시 시도해 주세요.")
+
         except Exception:
             await db.rollback()
             raise
@@ -207,8 +328,16 @@ class InviteService:
         return await InviteCrud.get_by_id(db, invite_id)
 
     @staticmethod
-    async def get_invites_by_plan(db: AsyncSession, plan_id: int):
-        await PlanValidator.check_plan(db, plan_id)
+    async def get_invites_by_plan(
+        db: AsyncSession,
+        plan_id: int,
+        user_id: int,
+    ):
+        plan = await PlanValidator.check_plan(db, plan_id)
+
+        if plan.u_id != user_id:
+            raise HTTPException(403, "방장만 초대 코드를 조회할 수 있습니다.")
+
         return await InviteCrud.get_by_plan_id(db, plan_id)
 
     @staticmethod
@@ -234,13 +363,34 @@ class InviteService:
         db: AsyncSession,
         code: str,
         user_id: int,
-        role: str = "member",
+        role: str = MEMBER_ROLE,
     ):
         if not role.strip():
             raise HTTPException(422, "멤버 역할을 입력해야 합니다.")
 
         try:
-            invite = await InviteService.verify_invite(db, code)
+            result = await db.execute(
+                select(Invite)
+                .where(Invite.i_code == code)
+                .with_for_update()
+            )
+            invite = result.scalar_one_or_none()
+
+            if invite is None:
+                raise HTTPException(404, "초대 코드가 존재하지 않습니다.")
+
+            if invite.i_used:
+                raise HTTPException(409, "이미 사용된 초대 코드입니다.")
+
+            now = datetime.now(timezone.utc).replace(tzinfo=None)
+
+            if invite.i_expire <= now:
+                raise HTTPException(400, "만료된 초대 코드입니다.")
+
+            plan = await PlanValidator.check_plan(db, invite.p_id)
+
+            if plan.u_id == user_id:
+                raise HTTPException(409, "이미 참여 중인 여행입니다.")
 
             existing = await PlanMemberCrud.get_by_plan_and_user(
                 db, invite.p_id, user_id
@@ -251,10 +401,10 @@ class InviteService:
             member = await PlanMemberCrud.create(
                 db, invite.p_id, user_id, role
             )
-            await InviteCrud.mark_used(db, invite.i_id)
 
-            await PlanTransaction.save(db, member)
-            return member
+            await InviteCrud.mark_used(db, invite.i_id)
+            return await PlanTransaction.save(db, member)
+
         except Exception:
             await db.rollback()
             raise
@@ -266,6 +416,86 @@ class InviteService:
             if deleted is None:
                 return None
 
+            await PlanTransaction.save(db)
+            return True
+        except Exception:
+            await db.rollback()
+            raise
+
+
+# ==================================================
+# 3-2. 참여 요청 Service (공개 여행 → "여행플래너 요청하기")
+# ==================================================
+
+class JoinRequestService:
+
+    @staticmethod
+    async def create_request(db: AsyncSession, plan_id: int, user_id: int):
+        plan = await PlanValidator.check_plan(db, plan_id)
+
+        if not plan.p_public:
+            raise HTTPException(403, "공개된 여행계획에만 참여를 요청할 수 있습니다.")
+
+        if plan.u_id == user_id or await PlanMemberCrud.get_by_plan_and_user(
+            db, plan_id, user_id
+        ) is not None:
+            raise HTTPException(409, "이미 참여 중인 여행입니다.")
+
+        if await JoinRequestCrud.get_by_plan_and_user(db, plan_id, user_id) is not None:
+            raise HTTPException(409, "이미 참여를 요청했어요. 방장의 승인을 기다려 주세요.")
+
+        try:
+            req = await JoinRequestCrud.create(db, plan_id, user_id)
+            return await PlanTransaction.save(db, req)
+        except Exception:
+            await db.rollback()
+            raise
+
+    @staticmethod
+    async def get_my_request(db: AsyncSession, plan_id: int, user_id: int):
+        await PlanValidator.check_plan(db, plan_id)
+        req = await JoinRequestCrud.get_by_plan_and_user(db, plan_id, user_id)
+        return {"requested": req is not None, "jr_id": req.jr_id if req else None}
+
+    @staticmethod
+    async def list_requests(db: AsyncSession, plan_id: int, user_id: int):
+        # 요청 목록은 방장·멤버 모두 볼 수 있다 (승인은 방장만)
+        await PlanAccessService.require_member(db, plan_id, user_id)
+        rows = await JoinRequestCrud.get_by_plan_with_names(db, plan_id)
+        return [dict(row) for row in rows]
+
+    @staticmethod
+    async def _get_request(db: AsyncSession, plan_id: int, jr_id: int):
+        req = await JoinRequestCrud.get_by_id(db, jr_id)
+        if req is None or req.p_id != plan_id:
+            raise HTTPException(404, "참여 요청이 없습니다.")
+        return req
+
+    @staticmethod
+    async def approve(db: AsyncSession, plan_id: int, jr_id: int):
+        req = await JoinRequestService._get_request(db, plan_id, jr_id)
+
+        try:
+            if await PlanMemberCrud.get_by_plan_and_user(db, plan_id, req.u_id) is None:
+                await PlanMemberCrud.create(db, plan_id, req.u_id, MEMBER_ROLE)
+            await JoinRequestCrud.delete(db, req)
+            await PlanTransaction.save(db)
+            return True
+        except Exception:
+            await db.rollback()
+            raise
+
+    @staticmethod
+    async def remove(db: AsyncSession, plan_id: int, jr_id: int, user_id: int):
+        """방장이 거절하거나, 요청한 본인이 취소한다."""
+        req = await JoinRequestService._get_request(db, plan_id, jr_id)
+        plan = await PlanValidator.check_plan(db, plan_id)
+
+        if req.u_id != user_id and plan.u_id != user_id:
+            raise HTTPException(403, "방장 또는 요청한 본인만 처리할 수 있습니다.")
+
+        try:
+            await JoinRequestCrud.delete(db, req)
             await PlanTransaction.save(db)
             return True
         except Exception:
@@ -303,18 +533,17 @@ class PlanMemberService:
         return await PlanMemberCrud.get_by_id(db, member_id)
 
     @staticmethod
-    async def get_members_with_names(db: AsyncSession, plan_id: int):
-        await PlanValidator.check_plan(db, plan_id)
-        rows = await PlanMemberCrud.get_with_names(db, plan_id)
-        return [
-            {"pm_id": m.pm_id, "p_id": m.p_id, "u_id": m.u_id, "role": m.role, "u_name": name}
-            for m, name in rows
-        ]
-
-    @staticmethod
-    async def get_members_by_plan(db: AsyncSession, plan_id: int):
-        await PlanValidator.check_plan(db, plan_id)
-        return await PlanMemberCrud.get_by_plan_id(db, plan_id)
+    async def get_members_by_plan(
+        db: AsyncSession,
+        plan_id: int,
+        user_id: int,
+    ):
+        # 방장·멤버는 전체 명단, 공개 여행을 구경하는 사람은 방장 한 명(누구의 여행인지 표시용)만 본다
+        plan = await PlanAccessService.require_view(db, plan_id, user_id)
+        members = [dict(m) for m in await PlanMemberCrud.get_by_plan_with_names(db, plan_id)]
+        if plan.u_id == user_id or any(m["u_id"] == user_id for m in members):
+            return members
+        return [m for m in members if m["u_id"] == plan.u_id]
 
     @staticmethod
     async def get_members_by_user(db: AsyncSession, user_id: int):

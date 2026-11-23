@@ -1,8 +1,8 @@
 // [여행계획] 여행 상세의 틀: 대표 사진 + "도쿄, 4박 5일 여행일정입니다." + 탭 + 탭별 내용(Outlet)
 //   일정 → schedule/ScheduleTab · 예산 → budget/BudgetTab · 장소 → places/PlacesTab · 멤버 → members/MembersTab
-//  - 멤버만 일정을 고치고 예산·멤버 탭을 볼 수 있습니다. 공개(Y)된 다른 사람의 여행은 일정을 읽기만 할 수 있어요.
-//  - 방장은 공개 여부(Y/N)와 해시태그를, 멤버(방장 포함)는 여행 제목·여행지·날짜를 바꿀 수 있습니다. (PUT /api/plans/{id} 의 p_public)
-//  - 여행 기간(end_date)이 지나면 "여행기에 추가" 버튼이 나타나고, 누르면 여행을 완료 처리(p_status)한 뒤 여행기 작성 화면으로 넘어갑니다.
+//  - 권한: 방장 > 편집자 > 참여자(멤버). 일정·예산·여행 정보는 방장과 편집자만 고치고, 참여자는 일정·예산을 보기만 해요.
+//    공개 여부(Y/N)·해시태그·멤버 관리는 방장만. 공개(Y)된 다른 사람의 여행은 일정·장소만 보이고, 멤버 탭에서 "여행플래너 요청하기"를 보낼 수 있어요.
+//  - 여행 기간(end_date)이 지나면 "여행기에 추가" 버튼이 나타나고, 누르면 여행기 작성 화면으로 넘어갑니다. (여행 완료 처리는 서버가 합니다)
 //    내가 이미 이 여행으로 여행기를 썼다면 "내 여행기 보기"가 나와서 그 여행기로 이동합니다.
 import { useState } from 'react';
 import { Link, Outlet, useNavigate, useParams } from 'react-router-dom';
@@ -15,7 +15,7 @@ import { useAuth } from '../../context/AuthContext.jsx';
 import useAsync from '../../hooks/useAsync.js';
 import { planApi } from '../../api/planApi.js';
 import { journalApi } from '../../api/journalApi.js';
-import { isMember, canSee, isEnded } from './tripUtils.js';
+import { isMember, canSee, isEnded, canEditTrip } from './tripUtils.js';
 
 export default function TripDetailPage() {
   const { tripId } = useParams();
@@ -40,6 +40,7 @@ export default function TripDetailPage() {
   }
   const member = isMember(trip, user);
   const owner = trip.owner_id === user.user_id;
+  const editor = canEditTrip(trip, user); // 방장 또는 편집자
   const ended = isEnded(trip);
 
   const saveTags = async () => {
@@ -58,7 +59,7 @@ export default function TripDetailPage() {
     catch (err) { setActionError(err.message); }
   };
   const toJournal = async () => {
-    try { if (!trip.completed) await planApi.complete(trip.trip_id); navigate(`/journals/new/from/${trip.trip_id}`); }
+    try { navigate(`/journals/new/from/${trip.trip_id}`); }
     catch (err) { setActionError(err.message); }
   };
 
@@ -74,7 +75,7 @@ export default function TripDetailPage() {
         </div>
         {member && (
           <div className="trip-head__tools">
-            {!trip.completed && <button type="button" className="btn btn--small" onClick={() => { setInfoDraft({ title: trip.title, destination: trip.destination, start_date: trip.start_date, end_date: trip.end_date }); setActionError(''); setInfoOpen(true); }}>여행 정보·날짜 수정</button>}
+            {editor && !trip.completed && <button type="button" className="btn btn--small" onClick={() => { setInfoDraft({ title: trip.title, destination: trip.destination, start_date: trip.start_date, end_date: trip.end_date }); setActionError(''); setInfoOpen(true); }}>여행 정보·날짜 수정</button>}
             {owner && <button type="button" className="btn btn--small" onClick={togglePublic}>{trip.is_public === 'Y' ? '비공개로 전환' : '공개로 전환'}</button>}
             {owner && <button type="button" className="btn btn--small" onClick={() => { setTagDraft(trip.hashtags); setTagOpen(true); }}>해시태그 편집</button>}
           </div>
@@ -88,7 +89,7 @@ export default function TripDetailPage() {
         {actionError && <p className="form-error" role="alert">{actionError}</p>}
       </header>
       <TabNav tripId={tripId} isMember={member} />
-      <Outlet context={{ trip, canEdit: member, owner, reloadTrip: reload }} />
+      <Outlet context={{ trip, canEdit: editor, isMember: member, owner, reloadTrip: reload }} />
       <Modal open={infoOpen} title="여행 정보 수정" onClose={() => setInfoOpen(false)} width={460}>
         {infoDraft && (
           <div className="form-grid">

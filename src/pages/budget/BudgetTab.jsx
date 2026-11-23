@@ -11,7 +11,7 @@ const KINDS = { budget: '예산', add: '추가 예산', used: '지출' };
 const won = (n) => `${n.toLocaleString('ko-KR')}원`;
 
 export default function BudgetTab() {
-  const { trip, canEdit } = useOutletContext();
+  const { trip, canEdit, isMember } = useOutletContext(); // canEdit: 방장·편집자만 입력/수정, 참여자는 보기만
   const [state, setState] = useState({ items: [], budgets: [] });
   const [loading, setLoading] = useState(true);
   const [loadError, setLoadError] = useState('');
@@ -32,7 +32,7 @@ export default function BudgetTab() {
     load();
   }, [load]);
 
-  if (!canEdit) return <EmptyState icon="🔒" title="멤버만 볼 수 있어요" description="예산 가계부는 이 여행의 멤버에게만 보여요." />;
+  if (!isMember) return <EmptyState icon="🔒" title="멤버만 볼 수 있어요" description="예산 가계부는 이 여행의 멤버에게만 보여요." />;
 
   const { items, budgets } = state;
   const sum = (k) => items.filter((i) => i.kind === k).reduce((s, i) => s + i.amount, 0);
@@ -73,6 +73,7 @@ export default function BudgetTab() {
       </div>
       <div className={`budget-bar${remain < 0 ? ' over' : ''}`} role="img" aria-label={`예산의 ${pct}% 사용`}><i style={{ width: `${pct}%` }} /></div>
 
+      {canEdit ? (
       <form className="budget-form" onSubmit={add}>
         <select value={form.kind} onChange={(e) => setForm({ ...form, kind: e.target.value })} aria-label="구분">
           {Object.entries(KINDS).map(([k, v]) => <option key={k} value={k}>{v}</option>)}
@@ -81,6 +82,7 @@ export default function BudgetTab() {
         <input type="number" min="0" step="1" value={form.amount} onChange={(e) => setForm({ ...form, amount: e.target.value })} placeholder="금액(원)" aria-label="금액" />
         <button type="submit" className="btn btn--primary" disabled={busy}>추가</button>
       </form>
+      ) : <p className="readonly-note">예산·지출은 방장과 편집자만 입력할 수 있어요.</p>}
       {error && <p className="form-error" role="alert">{error}</p>}
 
       {loading ? (
@@ -105,10 +107,10 @@ export default function BudgetTab() {
                 <>
                   <span className="budget-list__memo">{i.memo}<small>{i.date}</small></span>
                   <b className={i.kind === 'used' ? 'minus' : 'plus'}>{i.kind === 'used' ? '-' : '+'}{won(i.amount)}</b>
-                  <span className="budget-list__tools">
+                  {canEdit && <span className="budget-list__tools">
                     <button type="button" className="btn btn--text" onClick={() => { setEditId(i.id); setDraft({ memo: i.memo, amount: String(i.amount) }); }}>수정</button>
                     <button type="button" className="btn btn--text" disabled={busy} onClick={() => run(() => planApi.deleteBudgetItem(trip.trip_id, i))}>삭제</button>
-                  </span>
+                  </span>}
                 </>
               )}
             </li>

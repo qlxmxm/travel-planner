@@ -1,15 +1,19 @@
 
 from datetime import datetime
-from sqlalchemy import delete, or_, select, update
+from sqlalchemy import delete, select, update, or_
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from backend.plans.models import (
     Plans, Invite, PlanMembers, hashtag,
-    plan_hashtag, plan_details, Budgets, expenses
+    plan_hashtag, plan_details, Budgets, expenses, JoinRequest
 )
 from backend.plans.schemas import (
     PlanCreate, PlanUpdate, BudgetCreate, BudgetUpdate
 )
+
+from backend.login.models import User
+
+from zoneinfo import ZoneInfo
 
 
 # ==================================================
@@ -27,6 +31,25 @@ class PlanCrud:
         db.add(PlanMembers(p_id=db_plan.p_id, u_id=db_plan.u_id, role="방장"))
         await db.flush()
         return db_plan
+
+
+    @staticmethod
+    async def get_accessible_plans(db: AsyncSession, user_id: int):
+        # 내가 방장(u_id)이거나, 멤버(PlanMembers)로 참여했거나, 공개(p_public=True)된 여행 조회
+        member_plan_ids = select(PlanMembers.p_id).where(PlanMembers.u_id == user_id)
+        stmt = (
+            select(Plans)
+            .where(
+                or_(
+                    Plans.u_id == user_id,
+                    Plans.p_id.in_(member_plan_ids),
+                    Plans.p_public.is_(True),
+                )
+            )
+            .order_by(Plans.p_id.desc())
+        )
+        result = await db.execute(stmt)
+        return result.scalars().all()
 
     @staticmethod
     async def get_by_id(db: AsyncSession, plan_id: int):
@@ -70,10 +93,10 @@ class PlanCrud:
             return None
 
         # 이 여행에 딸린 데이터를 먼저 지워야 외래키(FK) 오류가 나지 않는다
-        # (예산→지출, 일정, 해시태그 연결, 멤버, 초대 코드). 여행기는 지우지 않고 원본 계획 연결만 끊는다.
+        # (예산→지출, 일정, 해시태그 연결, 멤버, 초대 코드, 참여 요청). 여행기는 지우지 않고 원본 계획 연결만 끊는다.
         budget_ids = select(Budgets.b_id).where(Budgets.p_id == plan_id)
         await db.execute(delete(expenses).where(expenses.b_id.in_(budget_ids)))
-        for model in (Budgets, plan_details, plan_hashtag, PlanMembers, Invite):
+        for model in (Budgets, plan_details, plan_hashtag, PlanMembers, Invite, JoinRequest):
             await db.execute(delete(model).where(model.p_id == plan_id))
 
         from backend.journals.journal import journals  # 순환 import 방지용으로 함수 안에서 가져옴
@@ -82,6 +105,24 @@ class PlanCrud:
         await db.delete(db_plan)
         await db.flush()
         return db_plan
+
+
+    @staticmethod
+    async def complete_expired_plans(db: AsyncSession):
+        now = datetime.now(ZoneInfo("Asia/Seoul")).replace(tzinfo=None)
+
+        stmt = (
+            update(Plans)
+            .where(
+                Plans.p_end < now,
+                Plans.p_status.is_(False),
+            )
+            .values(p_status=True)
+        )
+
+        result = await db.execute(stmt)
+        await db.flush()
+        return result.rowcount
 
 
 # ==================================================
@@ -185,16 +226,22 @@ class PlanMemberCrud:
         )
         return result.scalars().all()
 
+
     @staticmethod
-    async def get_with_names(db: AsyncSession, plan_id: int):
-        from backend.login.models import User
+    async def get_by_plan_with_names(db: AsyncSession, plan_id: int):
         result = await db.execute(
-            select(PlanMembers, User.u_name)
-            .join(User, User.u_id == PlanMembers.u_id)
+            select(
+                PlanMembers.pm_id,
+                PlanMembers.p_id,
+                PlanMembers.u_id,
+                User.u_name,
+                PlanMembers.role,
+            )
+            .join(User, PlanMembers.u_id == User.u_id)
             .where(PlanMembers.p_id == plan_id)
             .order_by(PlanMembers.pm_id)
         )
-        return [(m, name) for m, name in result.all()]
+        return result.mappings().all()
 
     @staticmethod
     async def get_by_plan_and_user(
@@ -531,3 +578,51 @@ class ExpenseCrud:
         await db.delete(db_expense)
         await db.flush()
         return db_expense
+
+
+# ==================================================
+# 참여 요청 CRUD (공개 여행에 "같이 가고 싶어요")
+# ==================================================
+
+class JoinRequestCrud:
+
+    @staticmethod
+    async def create(db: AsyncSession, plan_id: int, user_id: int):
+        req = JoinRequest(p_id=plan_id, u_id=user_id)
+        db.add(req)
+        await db.flush()
+        return req
+
+    @staticmethod
+    async def get_by_id(db: AsyncSession, jr_id: int):
+        return await db.get(JoinRequest, jr_id)
+
+    @staticmethod
+    async def get_by_plan_and_user(db: AsyncSession, plan_id: int, user_id: int):
+        result = await db.execute(
+            select(JoinRequest).where(
+                JoinRequest.p_id == plan_id, JoinRequest.u_id == user_id
+            )
+        )
+        return result.scalar_one_or_none()
+
+    @staticmethod
+    async def get_by_plan_with_names(db: AsyncSession, plan_id: int):
+        result = await db.execute(
+            select(
+                JoinRequest.jr_id,
+                JoinRequest.p_id,
+                JoinRequest.u_id,
+                User.u_name,
+                JoinRequest.jr_create,
+            )
+            .join(User, JoinRequest.u_id == User.u_id)
+            .where(JoinRequest.p_id == plan_id)
+            .order_by(JoinRequest.jr_id)
+        )
+        return result.mappings().all()
+
+    @staticmethod
+    async def delete(db: AsyncSession, req):
+        await db.delete(req)
+        await db.flush()

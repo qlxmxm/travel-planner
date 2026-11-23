@@ -4,3 +4,5 @@ export const isMember = (trip, user) => trip.member_ids.includes(user.user_id) |
 export const canSee = (trip, user) => trip.is_public === 'Y' || isMember(trip, user);
 // 여행 기간(end_date)이 지났는지 → 지났으면 "여행기에 추가" 버튼이 나타남
 export const isEnded = (trip) => new Date(`${trip.end_date}T00:00:00`) < new Date(new Date().toDateString());
+// 일정·예산·여행 정보를 고칠 수 있는 사람: 방장 또는 방장이 '편집자'로 지정한 멤버
+export const canEditTrip = (trip, user) => trip.owner_id === user.user_id || (trip.editor_ids ?? []).includes(user.user_id);

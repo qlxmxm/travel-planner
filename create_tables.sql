@@ -223,3 +223,14 @@ CREATE TABLE IF NOT EXISTS photo_files (
     UNIQUE KEY uq_photo_name (pf_name)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
+-- 여행계획 참여 요청 저장
+CREATE TABLE IF NOT EXISTS plan_join_requests (
+    jr_id     INT       NOT NULL AUTO_INCREMENT,
+    p_id      INT       NOT NULL,
+    u_id      INT       NOT NULL,
+    jr_create TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    PRIMARY KEY (jr_id),
+    UNIQUE KEY uq_jr_plan_user (p_id, u_id),
+    CONSTRAINT fk_jr_plan FOREIGN KEY (p_id) REFERENCES plans (p_id),
+    CONSTRAINT fk_jr_user FOREIGN KEY (u_id) REFERENCES users (u_id)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;

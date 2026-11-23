@@ -46,7 +46,7 @@ export default function TripListPage() {
   const join = async (e) => {
     e.preventDefault();
     try {
-      await planApi.join(code.trim(), user.user_id);
+      await planApi.join(code.trim());
       setJoinMsg({ ok: true, text: '여행에 참여했어요!' });
       setCode('');
       reload();
