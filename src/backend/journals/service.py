@@ -65,11 +65,20 @@ class JournalValidator:
         return journal
 
     @staticmethod
-    async def check_journal_author(db: AsyncSession, j_id: int, user_id: int):
-        journal = await JournalValidator.check_journal_exists(db, j_id)
+    async def check_journal_author(
+        db: AsyncSession,
+        j_id: int,
+        user_id: int,
+    ):
+        journal = await JournalValidator.check_journal_access(
+            db, j_id, user_id
+        )
 
         if journal.u_id != user_id:
-            raise HTTPException(403, "본인의 여행기만 수정하거나 삭제할 수 있습니다.")
+            raise HTTPException(
+                403,
+                "본인의 여행기만 수정하거나 삭제할 수 있습니다."
+            )
 
         return journal
 
@@ -89,6 +98,27 @@ class JournalValidator:
     def check_item_update(data: JournalItemUpdate):
         if "ji_rating" in data.model_fields_set and data.ji_rating is None:
             raise HTTPException(422, "여행기 별점은 필수입니다.")
+
+    @staticmethod
+    async def check_journal_access(
+        db: AsyncSession,
+        j_id: int,
+        user_id: int,
+    ):
+        journal = await JournalValidator.check_journal_exists(db, j_id)
+
+        if journal.p_id is None:
+            if journal.u_id != user_id:
+                raise HTTPException(
+                    403,
+                    "해당 여행계획의 작성자 또는 초대된 멤버만 조회할 수 있습니다."
+                )
+            return journal
+
+        await JournalValidator.check_plan_access(
+            db, journal.p_id, user_id
+        )
+        return journal
 
 
 # ==================================================

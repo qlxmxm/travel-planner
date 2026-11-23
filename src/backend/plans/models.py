@@ -18,8 +18,6 @@ class Plans(Base):
     loc: Mapped[str] = mapped_column(String(100), nullable=False)
     p_start: Mapped[datetime] = mapped_column(TIMESTAMP, nullable=False)
     p_end: Mapped[datetime] = mapped_column(TIMESTAMP, nullable=False)
-    p_status: Mapped[bool] = mapped_column(nullable=False)
-
     p_status: Mapped[bool] = mapped_column(
     nullable=False,
     default=False,

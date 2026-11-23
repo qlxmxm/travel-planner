@@ -55,7 +55,7 @@ class journals_item(Base):
     ji_title: Mapped[str] = mapped_column(String(100), nullable=False)
     ji_content: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
     ji_photo: Mapped[Optional[str]] = mapped_column(String(255), nullable=True)
-    ji_rating: Mapped[Optional[int]] = mapped_column(TINYINT, nullable=True)
+    ji_rating: Mapped[int] = mapped_column(TINYINT, nullable=False)
 
     __table_args__ = (
         CheckConstraint("ji_rating BETWEEN 1 AND 5", name="ck_ji_rating_range"),
