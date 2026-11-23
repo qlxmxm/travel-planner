@@ -303,11 +303,12 @@ class JournalCommentCrud:
 # 5. 여행기 해시태그 조회
 # ==================================================
 
+
 class JournalHashtagCrud:
 
     @staticmethod
     async def get_by_journal(db: AsyncSession, j_id: int):
-        """여행기의 원본 여행계획에 연결된 해시태그 조회"""
+        """여행기의 원본 여행계획에 연결된 해시태그 조회 (계획의 해시태그를 그대로 따라간다)"""
         result = await db.execute(
             select(hashtag)
             .join(plan_hashtag, plan_hashtag.h_id == hashtag.h_id)

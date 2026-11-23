@@ -47,6 +47,7 @@ export function toTrip(plan, members = [], tags = []) {
     owner_id: plan.u_id,
     owner_name: owner?.u_name ?? '',
     member_ids: members.map((m) => m.u_id),
+    editor_ids: members.filter((m) => m.role === '편집자').map((m) => m.u_id), // 방장처럼 편집할 수 있는 멤버
     members: members.length || 1,
     hashtags: tags.map((t) => t.h_name),
     is_public: plan.p_public ? 'Y' : 'N',
@@ -113,7 +114,6 @@ export const planApi = {
   },
   remove: (planId) => request(base(planId), { method: 'DELETE' }),
   setPublic: (planId, isPublic) => request(base(planId), { method: 'PUT', body: { p_public: isPublic === 'Y' } }),
-  complete: (planId) => request(base(planId), { method: 'PUT', body: { p_status: true } }), // 여행기는 완료된 여행만 쓸 수 있음
 
   // ----- 해시태그: 이름으로 태그를 만들고(이미 있으면 재사용) 여행에 연결/해제 -----
   async setTags(planId, before, after) {
@@ -146,6 +146,15 @@ export const planApi = {
   // ----- 멤버 / 초대 -----
   listMembers: (planId) => request(`${base(planId)}/members`),
   removeMember: (planId, pmId) => request(`${base(planId)}/members/${pmId}`, { method: 'DELETE' }),
+  // 멤버 역할 바꾸기(방장만): '편집자' = 방장처럼 일정·예산·여행 정보를 고칠 수 있음 / '멤버' = 보기만 가능한 참여자
+  setMemberRole: (planId, pmId, role) => request(`${base(planId)}/members/${pmId}`, { method: 'PUT', body: { role } }),
+
+  // ----- 참여 요청: 공개된 다른 사람의 여행에 "같이 가고 싶어요" -----
+  requestJoin: (planId) => request(`${base(planId)}/join-requests`, { method: 'POST' }),
+  myJoinRequest: (planId) => request(`${base(planId)}/join-requests/me`),            // { requested, jr_id }
+  listJoinRequests: (planId) => request(`${base(planId)}/join-requests`),             // 멤버만 볼 수 있음
+  approveJoinRequest: (planId, jrId) => request(`${base(planId)}/join-requests/${jrId}/approve`, { method: 'POST' }), // 방장만
+  removeJoinRequest: (planId, jrId) => request(`${base(planId)}/join-requests/${jrId}`, { method: 'DELETE' }),        // 방장은 거절, 본인은 취소
   async latestInvite(planId) {
     const rows = await request(`${base(planId)}/invites`);
     const now = Date.now();
@@ -155,7 +164,7 @@ export const planApi = {
     const now = new Date();
     return request(`${base(planId)}/invites`, { method: 'POST', body: { p_id: planId, i_code: code, i_create: iso(now), i_expire: iso(new Date(now.getTime() + days * DAY)) } });
   },
-  join: (code, userId) => request(`/plans/invites/join?user_id=${userId}`, { method: 'POST', body: { i_code: code } }),
+  join: (code) => request('/plans/invites/join', { method: 'POST', body: { i_code: code } }),
 
   // ----- 예산 / 지출 -----
   // 화면 항목: { id, kind: 'budget'|'add'|'used', memo, amount, date, ref }

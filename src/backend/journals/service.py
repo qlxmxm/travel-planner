@@ -52,7 +52,9 @@ class JournalValidator:
     async def check_completed_plan(db: AsyncSession, plan_id: int, user_id: int):
         plan = await JournalValidator.check_plan_access(db, plan_id, user_id)
 
-        if not plan.p_status:
+        # 완료 처리(p_status)는 스케줄러가 하므로, 여행 기간이 이미 끝난 여행도 완료로 본다
+        ended = plan.p_end is not None and plan.p_end < datetime.now()
+        if not plan.p_status and not ended:
             raise HTTPException(400, "완료된 여행계획만 여행기로 작성할 수 있습니다.")
 
         if plan.p_start is None:
@@ -70,11 +72,18 @@ class JournalValidator:
         return journal
 
     @staticmethod
-    async def check_journal_author(db: AsyncSession, j_id: int, user_id: int):
+    async def check_journal_author(
+        db: AsyncSession,
+        j_id: int,
+        user_id: int,
+    ):
         journal = await JournalValidator.check_journal_exists(db, j_id)
 
         if journal.u_id != user_id:
-            raise HTTPException(403, "본인의 여행기만 수정하거나 삭제할 수 있습니다.")
+            raise HTTPException(
+                403,
+                "본인의 여행기만 수정하거나 삭제할 수 있습니다."
+            )
 
         return journal
 
@@ -94,6 +103,27 @@ class JournalValidator:
     def check_item_update(data: JournalItemUpdate):
         if "ji_rating" in data.model_fields_set and data.ji_rating is None:
             raise HTTPException(422, "여행기 별점은 필수입니다.")
+
+    @staticmethod
+    async def check_journal_access(
+        db: AsyncSession,
+        j_id: int,
+        user_id: int,
+    ):
+        journal = await JournalValidator.check_journal_exists(db, j_id)
+
+        if journal.p_id is None:
+            if journal.u_id != user_id:
+                raise HTTPException(
+                    403,
+                    "해당 여행계획의 작성자 또는 초대된 멤버만 조회할 수 있습니다."
+                )
+            return journal
+
+        await JournalValidator.check_plan_access(
+            db, journal.p_id, user_id
+        )
+        return journal
 
 
 # ==================================================
@@ -307,6 +337,7 @@ class JournalPlanService:
             "days": [days[key] for key in sorted(days)],
         }
 
+    
     @staticmethod
     async def create_journal_from_plan(
         db: AsyncSession,
@@ -316,6 +347,18 @@ class JournalPlanService:
     ):
         plan = await JournalValidator.check_completed_plan(db, plan_id, user_id)
         details = await JournalPlanCrud.get_plan_details(db, plan_id)
+
+        # 원본 여행계획에 일정이 없는 경우
+        if not details:
+            raise HTTPException(
+                422, "여행 일정이 없는 여행계획은 여행기를 작성할 수 없습니다."
+            )
+
+        # 여행기 일정이 전달되지 않은 경우
+        if not data.items:
+            raise HTTPException(
+                422, "여행기 일정을 하나 이상 입력해야 합니다."
+            )
 
         original_items = {
             detail.pd_id: (detail, place_name)
@@ -370,11 +413,13 @@ class JournalPlanService:
             journal_id = journal.j_id
             await db.commit()
 
+
         except Exception:
             await db.rollback()
             raise
 
         return await JournalService.get_journal_detail(db, journal_id)
+
 
 
 

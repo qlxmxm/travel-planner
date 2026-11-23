@@ -9,3 +9,5 @@ PyJWT
 pydantic[email]
 pydantic-settings
 python-dotenv
+
+apscheduler
