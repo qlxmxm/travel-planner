@@ -32,6 +32,49 @@ from backend.login.security import get_current_user
 
 router = APIRouter(prefix="/plans", tags=["여행 계획"])
 
+# ==================================================
+# 4. 해시태그
+# ==================================================
+
+@router.post(
+    "/hashtags",
+    response_model=HashtagInDB,
+    status_code=201,
+)
+async def create_hashtag(
+    data: HashtagCreate,
+    db: AsyncSession = Depends(get_db),
+):
+    return await HashtagService.create_hashtag(db, data)
+
+
+@router.get("/hashtags", response_model=list[HashtagInDB])
+async def get_all_hashtags(
+    db: AsyncSession = Depends(get_db),
+):
+    return await HashtagService.get_all_hashtags(db)
+
+
+@router.get("/hashtags/{hashtag_id}", response_model=HashtagInDB)
+async def get_hashtag_by_id(
+    hashtag_id: int,
+    db: AsyncSession = Depends(get_db),
+):
+    tag = await HashtagService.get_hashtag_by_id(db, hashtag_id)
+    if tag is None:
+        raise HTTPException(404, "해시태그가 없습니다.")
+    return tag
+
+
+@router.delete("/hashtags/{hashtag_id}", status_code=204)
+async def delete_hashtag(
+    hashtag_id: int,
+    db: AsyncSession = Depends(get_db),
+):
+    deleted = await HashtagService.delete_hashtag(db, hashtag_id)
+    if deleted is None:
+        raise HTTPException(404, "해시태그가 없습니다.")
+
 
 
 # ==================================================
@@ -337,48 +380,6 @@ async def delete_member(
 
 
 
-# ==================================================
-# 4. 해시태그
-# ==================================================
-
-@router.post(
-    "/hashtags",
-    response_model=HashtagInDB,
-    status_code=201,
-)
-async def create_hashtag(
-    data: HashtagCreate,
-    db: AsyncSession = Depends(get_db),
-):
-    return await HashtagService.create_hashtag(db, data)
-
-
-@router.get("/hashtags", response_model=list[HashtagInDB])
-async def get_all_hashtags(
-    db: AsyncSession = Depends(get_db),
-):
-    return await HashtagService.get_all_hashtags(db)
-
-
-@router.get("/hashtags/{hashtag_id}", response_model=HashtagInDB)
-async def get_hashtag_by_id(
-    hashtag_id: int,
-    db: AsyncSession = Depends(get_db),
-):
-    tag = await HashtagService.get_hashtag_by_id(db, hashtag_id)
-    if tag is None:
-        raise HTTPException(404, "해시태그가 없습니다.")
-    return tag
-
-
-@router.delete("/hashtags/{hashtag_id}", status_code=204)
-async def delete_hashtag(
-    hashtag_id: int,
-    db: AsyncSession = Depends(get_db),
-):
-    deleted = await HashtagService.delete_hashtag(db, hashtag_id)
-    if deleted is None:
-        raise HTTPException(404, "해시태그가 없습니다.")
 
 
 # ==================================================
