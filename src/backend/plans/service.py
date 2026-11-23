@@ -37,6 +37,7 @@ from datetime import timedelta
 from sqlalchemy import select
 
 from backend.plans.models import Invite
+from backend.login.models import User
 
 # ==================================================
 # 1. 공통 검증 및 트랜잭션
@@ -71,6 +72,51 @@ class PlanValidator:
         if expense is None:
             raise HTTPException(404, "지출 내역이 없습니다.")
         return expense
+
+    
+class PlanAccessService:
+
+    @staticmethod
+    async def require_member(
+        db: AsyncSession,
+        plan_id: int,
+        user_id: int,
+    ):
+        plan = await PlanValidator.check_plan(db, plan_id)
+
+        if plan.u_id == user_id:
+            return plan
+
+        member = await PlanMemberCrud.get_by_plan_and_user(
+            db, plan_id, user_id
+        )
+
+        if member is None:
+            raise HTTPException(
+                403,
+                "해당 여행계획의 작성자 또는 초대된 멤버만 조회할 수 있습니다."
+            )
+
+        return plan
+
+    @staticmethod
+    async def require_owner(
+        db: AsyncSession,
+        plan_id: int,
+        user_id: int,
+    ):
+        plan = await PlanValidator.check_plan(db, plan_id)
+
+        if plan.u_id != user_id:
+            raise HTTPException(
+                403,
+                "여행계획 작성자만 수행할 수 있습니다."
+            )
+
+        return plan
+
+
+
 
 
 class PlanTransaction:
@@ -107,10 +153,15 @@ class PlanService:
     async def create_plan(db: AsyncSession, plan: PlanCreate):
         try:
             db_plan = await PlanCrud.create(db, plan)
+            await PlanMemberCrud.create(db, db_plan.p_id, plan.u_id, role="owner")
             return await PlanTransaction.save(db, db_plan)
         except Exception:
             await db.rollback()
             raise
+
+    @staticmethod
+    async def get_accessible_plans(db: AsyncSession, user_id: int):
+        return await PlanCrud.get_accessible_plans(db, user_id)
 
     @staticmethod
     async def get_plan_by_id(db: AsyncSession, plan_id: int):
@@ -342,9 +393,48 @@ class PlanMemberService:
         return await PlanMemberCrud.get_by_id(db, member_id)
 
     @staticmethod
-    async def get_members_by_plan(db: AsyncSession, plan_id: int):
-        await PlanValidator.check_plan(db, plan_id)
-        return await PlanMemberCrud.get_by_plan_id(db, plan_id)
+    async def get_members_by_plan(
+        db: AsyncSession,
+        plan_id: int,
+        user_id: int,
+    ):
+        plan = await PlanValidator.check_plan(db, plan_id)
+
+        is_owner = plan.u_id == user_id
+        is_member = await PlanMemberCrud.get_by_plan_and_user(
+            db, plan_id, user_id
+        )
+
+        if not is_owner and is_member is None:
+            raise HTTPException(
+                403,
+                "해당 여행계획의 작성자 또는 초대된 멤버만 조회할 수 있습니다."
+            )
+
+        owner = await db.get(User, plan.u_id)
+
+        if owner is None:
+            raise HTTPException(404, "방장 정보를 찾을 수 없습니다.")
+
+        members = await PlanMemberCrud.get_by_plan_with_names(db, plan_id)
+
+        result = [
+            {
+                "pm_id": None,
+                "p_id": plan_id,
+                "u_id": owner.u_id,
+                "u_name": owner.u_name,
+                "role": "owner",
+            }
+        ]
+
+        result.extend(
+            dict(member)
+            for member in members
+            if member["u_id"] != owner.u_id
+        )
+
+        return result
 
     @staticmethod
     async def get_members_by_user(db: AsyncSession, user_id: int):

@@ -8,12 +8,13 @@ from pydantic import AliasChoices, BaseModel, Field
 # ───────── 장소 (조회만 가능) ─────────
 
 class LocationListOut(BaseModel):
-    """38 GET /location 응답 배열의 한 칸"""
+    """38 GET /locations 응답 배열의 한 칸"""
     l_id: int
     l_category: str
     l_name: str
     l_city: str
     l_add: str
+    l_image: Optional[str] = None  # 사진 이름표 (프론트 photos.js의 키)
     avg_rating: float = 0          # DB에 없음, 리뷰로 계산
     review_count: int = 0          # DB에 없음, 리뷰로 계산
 
@@ -31,6 +32,7 @@ class LocationDetailOut(BaseModel):
     l_end: Optional[str] = None    # 맛집=마감시간, 숙소=체크아웃
     l_intro: Optional[str] = None
     l_city: str
+    l_image: Optional[str] = None  # 사진 이름표 (프론트 photos.js의 키)
     avg_rating: float = 0
     review_count: int = 0
 

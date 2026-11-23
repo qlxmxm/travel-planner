@@ -16,6 +16,7 @@ class PlanBase(BaseModel):
 
 
 class PlanCreate(PlanBase):
+    p_status: bool = False
 
     @model_validator(mode="after")
     def check_dates(self):
@@ -37,6 +38,13 @@ class PlanInDB(PlanBase):
     p_status: bool
 
     model_config = ConfigDict(from_attributes=True)
+
+class PlanMemberDetail(BaseModel):
+    pm_id: int | None = None
+    p_id: int
+    u_id: int
+    u_name: str
+    role: str
 
 
 # ==================================================

@@ -1,6 +1,6 @@
 
 from datetime import datetime
-from sqlalchemy import select, update
+from sqlalchemy import delete, select, update, or_
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from backend.plans.models import (
@@ -11,6 +11,7 @@ from backend.plans.schemas import (
     PlanCreate, PlanUpdate, BudgetCreate, BudgetUpdate
 )
 
+from backend.login.models import User
 
 from zoneinfo import ZoneInfo
 
@@ -23,10 +24,60 @@ class PlanCrud:
 
     @staticmethod
     async def create(db: AsyncSession, plan: PlanCreate):
-        db_plan = Plans(**plan.model_dump(), p_status=False)
+        db_plan = Plans(**plan.model_dump())
         db.add(db_plan)
         await db.flush()
         return db_plan
+
+    
+    @staticmethod
+    async def delete_by_id(db: AsyncSession, plan_id: int):
+        db_plan = await PlanCrud.get_by_id(db, plan_id)
+        if db_plan is None:
+            return None
+
+        budget_ids = select(Budgets.b_id).where(Budgets.p_id == plan_id)
+
+        await db.execute(
+            delete(expenses).where(expenses.b_id.in_(budget_ids))
+        )
+        await db.execute(
+            delete(Budgets).where(Budgets.p_id == plan_id)
+        )
+        await db.execute(
+            delete(plan_details).where(plan_details.p_id == plan_id)
+        )
+        await db.execute(
+            delete(plan_hashtag).where(plan_hashtag.p_id == plan_id)
+        )
+        await db.execute(
+            delete(PlanMembers).where(PlanMembers.p_id == plan_id)
+        )
+        await db.execute(
+            delete(Invite).where(Invite.p_id == plan_id)
+        )
+
+        await db.delete(db_plan)
+        await db.flush()
+        return db_plan
+
+    @staticmethod
+    async def get_accessible_plans(db: AsyncSession, user_id: int):
+        # 내가 방장(u_id)이거나, 멤버(PlanMembers)로 참여했거나, 공개(p_status=True)된 여행 조회
+        member_plan_ids = select(PlanMembers.p_id).where(PlanMembers.u_id == user_id)
+        stmt = (
+            select(Plans)
+            .where(
+                or_(
+                    Plans.u_id == user_id,
+                    Plans.p_id.in_(member_plan_ids),
+                    Plans.p_status.is_(True),
+                )
+            )
+            .order_by(Plans.p_id.desc())
+        )
+        result = await db.execute(stmt)
+        return result.scalars().all()
 
     @staticmethod
     async def get_by_id(db: AsyncSession, plan_id: int):
@@ -180,6 +231,23 @@ class PlanMemberCrud:
             .order_by(PlanMembers.pm_id)
         )
         return result.scalars().all()
+
+
+    @staticmethod
+    async def get_by_plan_with_names(db: AsyncSession, plan_id: int):
+        result = await db.execute(
+            select(
+                PlanMembers.pm_id,
+                PlanMembers.p_id,
+                PlanMembers.u_id,
+                User.u_name,
+                PlanMembers.role,
+            )
+            .join(User, PlanMembers.u_id == User.u_id)
+            .where(PlanMembers.p_id == plan_id)
+            .order_by(PlanMembers.pm_id)
+        )
+        return result.mappings().all()
 
     @staticmethod
     async def get_by_plan_and_user(

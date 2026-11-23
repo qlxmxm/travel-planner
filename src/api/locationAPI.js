@@ -1,12 +1,6 @@
 import {request} from './client.js';
 
 
-
-
-
-
-
-
 // 38 장소 목록 검색
 export async function getLocations(category,q,city,page, size) {
   const params = new URLSearchParams();

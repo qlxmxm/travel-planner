@@ -2,7 +2,7 @@
 from sqlalchemy import delete, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from backend.journals import journals, journals_item, journals_comment
+from backend.journals import journals, journals_item, journals_comment, journals_hashtag
 from backend.journals.schema import (
     JournalCreate,
     JournalUpdate,
@@ -302,16 +302,39 @@ class JournalCommentCrud:
 # 5. 여행기 해시태그 조회
 # ==================================================
 
+
 class JournalHashtagCrud:
 
     @staticmethod
+    async def copy_from_plan(
+        db: AsyncSession,
+        plan_id: int,
+        journal_id: int,
+    ):
+        result = await db.execute(
+            select(plan_hashtag.h_id)
+            .where(plan_hashtag.p_id == plan_id)
+        )
+
+        links = [
+            journals_hashtag(j_id=journal_id, h_id=h_id)
+            for h_id in result.scalars().all()
+        ]
+
+        db.add_all(links)
+        await db.flush()
+        return links
+
+    @staticmethod
     async def get_by_journal(db: AsyncSession, j_id: int):
-        """여행기의 원본 여행계획에 연결된 해시태그 조회"""
         result = await db.execute(
             select(hashtag)
-            .join(plan_hashtag, plan_hashtag.h_id == hashtag.h_id)
-            .join(journals, journals.p_id == plan_hashtag.p_id)
-            .where(journals.j_id == j_id)
+            .join(
+                journals_hashtag,
+                journals_hashtag.h_id == hashtag.h_id,
+            )
+            .where(journals_hashtag.j_id == j_id)
             .order_by(hashtag.h_id)
         )
         return result.scalars().all()
+

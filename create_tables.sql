@@ -52,7 +52,7 @@ CREATE TABLE IF NOT EXISTS plans (
     loc       VARCHAR(100) NOT NULL,
     p_start   DATETIME     NOT NULL,
     p_end     DATETIME     NOT NULL,
-    p_status  TINYINT      NOT NULL,
+    p_status TINYINT NOT NULL DEFAULT 0,
     PRIMARY KEY (p_id),
     CONSTRAINT fk_plans_user FOREIGN KEY (u_id) REFERENCES users (u_id)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
@@ -65,6 +65,7 @@ CREATE TABLE IF NOT EXISTS invite (
     i_expire  DATETIME     NOT NULL,
     i_used    TINYINT(1)   NOT NULL DEFAULT 0,
     PRIMARY KEY (i_id),
+    UNIQUE KEY uq_invite_code (i_code),
     CONSTRAINT fk_invite_plan FOREIGN KEY (p_id) REFERENCES plans (p_id)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
@@ -74,6 +75,7 @@ CREATE TABLE IF NOT EXISTS plan_members (
     u_id   INT          NOT NULL,
     role   VARCHAR(100) NOT NULL,
     PRIMARY KEY (pm_id),
+    UNIQUE KEY uq_pm_plan_user (p_id, u_id),
     CONSTRAINT fk_pm_plan FOREIGN KEY (p_id) REFERENCES plans (p_id),
     CONSTRAINT fk_pm_user FOREIGN KEY (u_id) REFERENCES users (u_id)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
@@ -90,6 +92,7 @@ CREATE TABLE IF NOT EXISTS plan_hashtag (
     p_id   INT NOT NULL,
     h_id   INT NOT NULL,
     PRIMARY KEY (ph_id),
+    UNIQUE KEY uq_plan_hashtag (p_id, h_id),
     CONSTRAINT fk_ph_plan FOREIGN KEY (p_id) REFERENCES plans (p_id),
     CONSTRAINT fk_ph_hashtag FOREIGN KEY (h_id) REFERENCES hashtag (h_id)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
@@ -114,6 +117,8 @@ CREATE TABLE IF NOT EXISTS budgets (
     b_date    DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
     b_add     INT      NULL,
     PRIMARY KEY (b_id),
+    CONSTRAINT ck_budget_nonnegative CHECK (b_budget >= 0),
+    CONSTRAINT ck_budget_add_nonnegative CHECK (b_add IS NULL OR b_add >= 0),
     CONSTRAINT fk_budgets_plan FOREIGN KEY (p_id) REFERENCES plans (p_id)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
@@ -124,6 +129,7 @@ CREATE TABLE IF NOT EXISTS expenses (
     e_amount   INT          NOT NULL,
     e_time     DATETIME     NOT NULL DEFAULT CURRENT_TIMESTAMP,
     PRIMARY KEY (e_id),
+    CONSTRAINT ck_expense_nonnegative CHECK (e_amount >= 0),
     CONSTRAINT fk_expenses_budget FOREIGN KEY (b_id) REFERENCES budgets (b_id)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
@@ -151,7 +157,7 @@ CREATE TABLE IF NOT EXISTS journals_item (
     ji_title    VARCHAR(100) NOT NULL,
     ji_content  TEXT         NULL,
     ji_photo    VARCHAR(255) NULL,
-    ji_rating   TINYINT      NULL,
+    ji_rating   TINYINT      NOT NULL,
     PRIMARY KEY (ji_id),
     CONSTRAINT fk_ji_journal FOREIGN KEY (j_id) REFERENCES journals (j_id) ON DELETE CASCADE,
     CONSTRAINT ck_ji_day_min     CHECK (ji_day >= 1),
