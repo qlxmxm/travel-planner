@@ -14,13 +14,51 @@ import EmptyState from '../../components/common/EmptyState.jsx';
 import { useAuth } from '../../context/AuthContext.jsx';
 import { sampleTrips, isMember, canSee, isEnded } from '../../data/sampleTrips.js';
 
+
 export default function TripDetailPage() {
   const { tripId } = useParams();
   const { user } = useAuth();
+  const [plan, setPlan] = useState(null);
+  const [planMembers, setPlanMembers] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState('');
   const found = sampleTrips.find((t) => String(t.trip_id) === tripId); // TODO: GET /trips/{id}
   const [isPublic, setIsPublic] = useState(found?.is_public ?? 'N');
   const [tags, setTags] = useState(found?.hashtags ?? []);
   const [tagOpen, setTagOpen] = useState(false);
+
+  useEffect(() => {
+  let cancelled = false;
+
+  async function loadPlan() {
+    setLoading(true);
+    setError('');
+
+    try {
+      const [planData, membersData] = await Promise.all([
+        request(`/plans/${tripId}`),
+        request(`/plans/${tripId}/members`),
+      ]);
+
+      if (cancelled) return;
+
+      setPlan(planData);
+      setPlanMembers(membersData);
+    } catch (err) {
+      if (!cancelled) {
+        setError(err.message || '여행 정보를 불러오지 못했습니다.');
+      }
+    } finally {
+      if (!cancelled) setLoading(false);
+    }
+  }
+
+  loadPlan();
+
+  return () => {
+    cancelled = true;
+  };
+}, [tripId]);
 
   if (!found || !canSee({ ...found, is_public: isPublic }, user)) {
     return <EmptyState icon="🔒" title="볼 수 없는 여행이에요" description="없는 여행이거나 비공개 여행이에요."><Link to="/trips" className="btn btn--primary">여행계획 목록으로</Link></EmptyState>;

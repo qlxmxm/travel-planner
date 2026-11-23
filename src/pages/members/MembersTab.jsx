@@ -8,8 +8,7 @@ import { request } from '../../api/client.js';
 
 export default function MembersTab() {
   const { trip, canEdit, owner } = useOutletContext();
-  const planId = trip.p_id ?? trip.trip_id;
-
+  const planId = trip.p_id;
   const [members, setMembers] = useState(() =>
     sampleMembers
       .filter((m) => trip.member_ids.includes(m.user_id))

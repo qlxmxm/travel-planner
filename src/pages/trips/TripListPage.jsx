@@ -17,7 +17,7 @@ const SCOPES = ['전체', '내 여행계획', '다른 사람 계획'];
 
 export default function TripListPage() {
   const { user } = useAuth();
-  const [trips, setTrips] = useState(sampleTrips); // TODO: API 데이터로 교체
+  const [trips, setTrips] = useState([]); // TODO: API 데이터로 교체
   const [scope, setScope] = useState('전체');
   const [q, setQ] = useState('');
   const [tag, setTag] = useState('');
