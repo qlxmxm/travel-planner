@@ -1,6 +1,7 @@
 // [홈 화면 소개용] 홈 화면(HomePage)의 기능 소개 장면에서만 쓰는 예시 데이터입니다. 실제 여행 데이터는 api/planApi.js 로 서버에서 가져옵니다.
 // 로그인한 사용자(AuthContext)는 user_id 1 '홍길동' 입니다. author_id 가 1이면 "내가 쓴 글"로 취급합니다.
 import { photos } from './photos.js';
+import { homePhotos as hp } from './homePhotos.js';
 
 const mk = (id, author_id, author_name, text, time) => ({ id, author_id, author_name, text, time });
 
@@ -8,21 +9,21 @@ export const sampleTrips = [
   {
     trip_id: 1, owner_name: '홍길동', is_public: 'Y', hashtags: ['관광', '맛집여행'], member_ids: [1, 2, 3, 4], invite_code: 'TOKYO-7K2P', invite_expire: '2026-12-01', owner_id: 1, title: '도쿄 여행', destination: '도쿄', duration: '4박 5일', start_date: '2026-12-20', end_date: '2026-12-24', members: 4, photo: photos.tokyo,
     plans: [
-      { plan_id: 101, day: 1, time: '10:30', label: '여행의 시작', place: '나리타 국제공항', photo: photos.narita, title: '도착하면 심카드부터 받고 스카이라이너 타자', comments: [
+      { plan_id: 101, day: 1, time: '10:30', label: '여행의 시작', place: '나리타 에어포트 인', photo: hp.naritaInn, title: '도착하면 심카드부터 받고 스카이라이너 타자', comments: [
         mk(1, 3, '마이클', '나리타 도착 시간이 10시 반이라 입국 심사 줄이 길 수도 있어요', '오전 9:12'),
         mk(2, 1, '홍길동', '스카이라이너 예약해 둘게요. 시내까지 40분이래요', '오전 9:15'),
         mk(3, 2, '손오공', '좋아요! 저는 eSIM으로 미리 준비할게요', '오전 9:20') ] },
-      { plan_id: 102, day: 1, time: '13:00', label: '', place: '아키하바라', photo: photos.akihabara, title: '다양한 애니메이션 관련 제품을 만날 수 있는 일본 대표 오타로드', comments: [
+      { plan_id: 102, day: 1, time: '13:00', label: '', place: '아키하바라 전자상가', photo: hp.akihabara, title: '다양한 애니메이션 관련 제품을 만날 수 있는 일본 대표 오타로드', comments: [
         mk(4, 4, '아서', '게임센터는 꼭 가봐야 해요', '오후 1:02'),
         mk(5, 1, '홍길동', '면세 카운터 있는 매장 위주로 돌아요', '오후 1:10') ] },
-      { plan_id: 103, day: 1, time: '18:00', label: '식사 장소 추천', place: '아사쿠사 규카츠', photo: photos.gyukatsu, title: '입에서 살살 녹는 부드러운 식감의 규카츠로 유명한 곳', comments: [
+      { plan_id: 103, day: 1, time: '18:00', label: '식사 장소 추천', place: '아사쿠사 규카츠', photo: hp.gyukatsu, title: '입에서 살살 녹는 부드러운 식감의 규카츠로 유명한 곳', comments: [
         mk(6, 2, '손오공', '웨이팅 길다는 후기가 많아요. 5시 반에 가봐요', '오후 4:40'),
         mk(7, 3, '마이클', '저 생고기 굽는 거 처음이라 기대돼요', '오후 4:44') ] },
-      { plan_id: 104, day: 1, time: '21:00', label: '숙소로 이동', place: '게이오 플라자 호텔 도쿄', photo: photos.hotel, title: '디즈니랜드 무료 셔틀, 키티 룸, 수유실 등이 있어 아이와 함께 오면 더 좋은 호텔', comments: [
+      { plan_id: 104, day: 1, time: '21:00', label: '숙소로 이동', place: '시부야 스카이 호텔', photo: hp.shibuyaHotel, title: '디즈니랜드 무료 셔틀, 키티 룸, 수유실 등이 있어 아이와 함께 오면 더 좋은 호텔', comments: [
         mk(8, 1, '홍길동', '체크인은 3시부터라 짐 먼저 맡기면 돼요', '오후 8:05') ] },
-      { plan_id: 201, day: 2, time: '09:00', label: '아침 산책', place: '아사쿠사 센소지', photo: photos.asakusa, title: '이른 아침에 가면 사람이 적어 사진 찍기 좋은 도쿄 대표 사찰', comments: [ mk(9, 3, '마이클', '인형소 간식도 꼭 먹어봐요', '오전 8:30') ] },
-      { plan_id: 202, day: 2, time: '14:00', label: '', place: '시부야 스크램블 교차로', photo: photos.shibuya, title: '해 질 무렵 전망대에서 내려다보는 세계에서 가장 붐비는 교차로', comments: [] },
-      { plan_id: 203, day: 2, time: '19:00', label: '식사 장소 추천', place: '신주쿠 라멘 골목', photo: photos.ramen, title: '늦은 저녁에도 줄 서서 먹는 진한 국물 라멘 맛집', comments: [] },
+      { plan_id: 201, day: 2, time: '09:00', label: '아침 산책', place: '아사쿠사 센소지', photo: hp.sensoji, title: '이른 아침에 가면 사람이 적어 사진 찍기 좋은 도쿄 대표 사찰', comments: [ mk(9, 3, '마이클', '인형소 간식도 꼭 먹어봐요', '오전 8:30') ] },
+      { plan_id: 202, day: 2, time: '14:00', label: '', place: '시부야 스크램블 교차로', photo: hp.shibuya, title: '해 질 무렵 전망대에서 내려다보는 세계에서 가장 붐비는 교차로', comments: [] },
+      { plan_id: 203, day: 2, time: '19:00', label: '식사 장소 추천', place: '시부야 라멘 거리', photo: hp.ramen, title: '늦은 저녁에도 줄 서서 먹는 진한 국물 라멘 맛집', comments: [] },
     ],
   },
   { trip_id: 2, owner_name: '홍길동', is_public: 'N', hashtags: ['맛집여행'], member_ids: [1, 2, 3, 4], invite_code: 'OSAKA-3M9Q', invite_expire: '2026-12-31', owner_id: 1, title: '오사카 여행', destination: '오사카', duration: '3박 4일', start_date: '2027-01-15', end_date: '2027-01-18', members: 4, photo: photos.osaka,

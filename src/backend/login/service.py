@@ -47,3 +47,24 @@ async def clear_token(db: AsyncSession, user: User) -> None:
     """로그아웃하면 users.u_token 을 비웁니다."""
     user.u_token = None
     await db.commit()
+
+
+async def update_name(db: AsyncSession, user: User, u_name: str) -> User:
+    """닉네임(users.u_name)을 바꿉니다. 앞뒤 공백만 있는 이름은 허용하지 않습니다."""
+    name = u_name.strip()
+    if not name:
+        raise HTTPException(status.HTTP_422_UNPROCESSABLE_ENTITY, "이름을 입력해 주세요")
+    user.u_name = name
+    await db.commit()
+    await db.refresh(user)
+    return user
+
+
+async def change_password(db: AsyncSession, user: User, current_pw: str, new_pw: str) -> None:
+    """현재 비밀번호가 맞을 때만 새 비밀번호로 바꿉니다. (u_pwtest 는 건드리지 않습니다)"""
+    if not verify_password(current_pw, user.u_pw):
+        raise HTTPException(status.HTTP_400_BAD_REQUEST, "현재 비밀번호가 올바르지 않습니다")
+    if current_pw == new_pw:
+        raise HTTPException(status.HTTP_400_BAD_REQUEST, "새 비밀번호가 현재 비밀번호와 같습니다")
+    user.u_pw = hash_password(new_pw)
+    await db.commit()

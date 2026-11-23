@@ -33,6 +33,8 @@ class LocationDetailOut(BaseModel):
     l_intro: Optional[str] = None
     l_city: str
     l_image: Optional[str] = None  # 프론트 photos.js 의 키 이름
+    l_lat: Optional[float] = None  # 위도 (구글지도 표시용)
+    l_lng: Optional[float] = None  # 경도 (구글지도 표시용)
     avg_rating: float = 0
     review_count: int = 0
 

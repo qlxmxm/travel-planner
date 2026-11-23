@@ -33,3 +33,17 @@
 .editor-day__head .day-pill { margin: 0; }
 .editor-item { background: var(--bg-soft); border-radius: var(--radius-m); padding: 16px; margin-bottom: 12px; }
 .editor-item__top { display: flex; align-items: center; justify-content: space-between; margin-bottom: 10px; font-weight: 700; color: var(--ink-sub); }
+
+/* 사진 고르기: 현재 사진 미리보기 + 내 사진 올리기 */
+.photo-field { display: flex; flex-direction: column; gap: 10px; }
+.photo-picker__current { display: flex; align-items: center; gap: 12px; }
+.photo-picker__current img { width: 120px; height: 80px; object-fit: cover; border-radius: 12px; border: 1px solid var(--line); background: var(--bg-soft); }
+.photo-picker__upload { border: 2px dashed var(--line); border-radius: 12px; background: var(--bg-soft); color: var(--accent-ink); font-weight: 700; font-size: 12px; padding: 0 4px; cursor: pointer; }
+.photo-picker__upload:hover:not(:disabled) { border-color: var(--accent); }
+.photo-picker__upload:disabled { opacity: .55; cursor: not-allowed; }
+
+/* 일정 추가 폼: 장소 이름 후보 목록 */
+.place-suggest { list-style: none; margin: 6px 0 0; padding: 4px; border: 1px solid var(--line); border-radius: 14px; background: #fff; box-shadow: 0 8px 24px rgba(30, 40, 60, .10); }
+.place-suggest button { display: flex; align-items: center; justify-content: space-between; gap: 12px; width: 100%; padding: 10px 12px; border: 0; border-radius: 10px; background: none; font: inherit; font-size: 14px; font-weight: 600; text-align: left; cursor: pointer; }
+.place-suggest button:hover, .place-suggest button:focus-visible { background: var(--accent-soft, #eaf8fd); outline: none; }
+.place-suggest small { display: inline; margin: 0; color: var(--ink-mute); font-weight: 500; }

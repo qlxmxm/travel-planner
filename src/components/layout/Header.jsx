@@ -1,9 +1,10 @@
 // [공통] 상단 헤더
 import { Link, NavLink } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext.jsx';
+import UserMenu from './UserMenu.jsx';
 
 export default function Header() {
-  const { isLoggedIn, user } = useAuth();
+  const { isLoggedIn } = useAuth();
   return (
     <header className="app-header">
       <div className="app-header__inner">
@@ -16,7 +17,7 @@ export default function Header() {
         </nav>
         <div className="app-header__auth">
           {isLoggedIn ? (
-            <Link to="/login" className="btn btn--small" title="로그인 화면으로 이동">{user.user_name} 님</Link>
+            <UserMenu />
           ) : (
             <>
               <Link to="/login" className="btn btn--small">로그인</Link>

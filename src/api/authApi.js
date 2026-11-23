@@ -19,6 +19,8 @@ const sampleAuth = {
   restoreUser: async () => SAMPLE_USER,
   login: async (email) => ({ ...SAMPLE_USER, user_email: email }),
   register: async () => {},
+  updateName: async (name) => ({ ...SAMPLE_USER, user_name: name }),
+  changePassword: async () => {},
   logout: async () => SAMPLE_USER,            // 샘플 모드에서는 계속 홍길동
 };
 
@@ -41,6 +43,12 @@ const apiAuth = {
   },
   async register(email, name, password) {
     await request('/auth/register', { method: 'POST', body: { u_email: email, u_name: name, u_pw: password } });
+  },
+  async updateName(name) {
+    return toUser(await request('/users/me', { method: 'PUT', body: { u_name: name } }));
+  },
+  async changePassword(currentPw, newPw) {
+    await request('/users/me/password', { method: 'PUT', body: { current_pw: currentPw, new_pw: newPw } });
   },
   async logout() {
     try {

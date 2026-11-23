@@ -2,11 +2,12 @@
 // items: kind 'flight' (비행/이동 한 줄) | 'place' (장소: time, name, rating, text[], photo)
 // comments: author_id 가 1(홍길동)이면 "내 댓글" → 수정/삭제 가능
 import { photos } from './photos.js';
+import { homePhotos as hp } from './homePhotos.js';
 
 const c = (id, author_id, author_name, text, date) => ({ id, author_id, author_name, text, date });
 
 export const sampleJournals = [
-  { journal_id: 1, hashtags: ['관광', '맛집여행'], title: '도쿄 4박 5일, 걷고 먹고 또 걷고', summary: '아사쿠사부터 시부야까지 하루 3만 보를 걸은 기록', author: '홍길동', author_id: 1, date: '2026-10-12', likes: 128, views: 1520, cover: photos.tokyo,
+  { journal_id: 1, hashtags: ['관광', '맛집여행'], title: '도쿄 4박 5일, 걷고 먹고 또 걷고', summary: '아사쿠사부터 시부야까지 하루 3만 보를 걸은 기록', author: '홍길동', author_id: 1, date: '2026-10-12', likes: 128, views: 1520, cover: hp.skytree,
     days: [
       { day: 1, date: '2026.04.17', intro: '너무나도 많은 출발 공항과 짧은 환승 때문에 계획이 완전 틀어졌지만 여전히 재밌었던 하루',
         items: [
@@ -22,9 +23,9 @@ export const sampleJournals = [
         ] },
     ],
     comments: [ c(1, 2, '손오공', '규카츠 집 이름 알려주세요! 다음 달에 가요', '2026-10-13'), c(2, 1, '홍길동', '아사쿠사 본점이에요. 5시 반 전에 가면 덜 기다려요', '2026-10-13') ] },
-  { journal_id: 2, hashtags: ['힐링', '관광'], title: '제주 겨울바다 드라이브', summary: '렌터카로 해안도로를 따라 한 바퀴', author: '마이클', author_id: 2, date: '2026-09-28', likes: 86, views: 960, cover: photos.jeju,
+  { journal_id: 2, hashtags: ['힐링', '관광'], title: '제주 겨울바다 드라이브', summary: '렌터카로 해안도로를 따라 한 바퀴', author: '마이클', author_id: 2, date: '2026-09-28', likes: 86, views: 960, cover: hp.aewol,
     days: [ { day: 1, date: '2026.09.20', intro: '겨울 제주는 바람이 세지만 바다 색이 가장 진하다', items: [ { kind: 'place', time: '10:00', name: '애월 해안도로', rating: 5, text: ['창문을 열고 달리면 바다 냄새가 가득'], photo: photos.jeju } ] } ], comments: [] },
-  { journal_id: 3, hashtags: ['맛집여행'], title: '오사카 먹방 투어 후기', summary: '타코야키, 오코노미야키, 그리고 또 타코야키', author: '손오공', author_id: 3, date: '2026-09-10', likes: 64, views: 780, cover: photos.osaka,
+  { journal_id: 3, hashtags: ['맛집여행'], title: '오사카 먹방 투어 후기', summary: '타코야키, 오코노미야키, 그리고 또 타코야키', author: '손오공', author_id: 3, date: '2026-09-10', likes: 64, views: 780, cover: hp.osakaCastle,
     days: [ { day: 1, date: '2026.09.02', intro: '도톤보리에서 시작해 밤까지 먹기만 한 하루', items: [ { kind: 'place', time: '12:00', name: '도톤보리 라멘', rating: 4, text: ['줄이 길었지만 국물이 진했다'], photo: photos.ramen } ] } ], comments: [] },
   { journal_id: 4, hashtags: ['사진명소', '힐링'], title: '강릉 일출 보러 가기', summary: '새벽 4시에 출발한 당일치기', author: '아서', author_id: 4, date: '2026-08-21', likes: 41, views: 530, cover: photos.gangneung,
     days: [ { day: 1, date: '2026.08.15', intro: '일출 시간에 맞춰 도착하면 사람이 많지 않다', items: [ { kind: 'place', time: '05:30', name: '강릉 바다', rating: 5, text: ['수평선이 붉게 물드는 20분'], photo: photos.gangneung } ] } ], comments: [] },

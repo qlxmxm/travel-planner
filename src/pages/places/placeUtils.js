@@ -28,7 +28,11 @@ export function summarizeReviews(reviews) {
 export const summaryOfPlace = (place) => ({ average: place.avg_rating ?? 0, count: place.review_count ?? 0 });
 
 // DB 의 l_image 는 src/data/photos.js 의 키 이름 (예: 'ramen'). 없으면 기본 그림.
-export const imageOfPlace = (place) => photos[place.l_image] ?? photos.tokyo;
+export const imageOfPlace = (place) => {
+  const v = place.l_image;
+  if (v && (v.startsWith('/') || v.startsWith('http'))) return v;   // 올린 사진 주소
+  return photos[v] ?? photos.tokyo;
+};
 
 // '2026-11-22T09:30:00' → '2026.11.22'
 export function formatReviewDate(value) {

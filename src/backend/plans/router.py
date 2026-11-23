@@ -35,6 +35,14 @@ async def get_all_hashtags(
     return await HashtagService.get_all_hashtags(db)
 
 
+@router.get("/public", response_model=list[PlanInDB])
+async def get_public_plans(
+    db: AsyncSession = Depends(get_db),
+):
+    """공개(p_public)된 모든 여행계획. 다른 사람의 여행을 구경하는 화면에서 씁니다."""
+    return await PlanService.get_public_plans(db=db)
+
+
 # ==================================================
 # 1. 여행계획
 # ==================================================

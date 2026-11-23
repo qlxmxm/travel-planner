@@ -1,5 +1,5 @@
 // [공통] 라우팅 지도. 새 페이지를 추가할 때만 여기를 수정하고, 수정 전에 팀에 알려주세요.
-import { Routes, Route } from 'react-router-dom';
+import { Routes, Route, Navigate } from 'react-router-dom';
 import Layout from './components/layout/Layout.jsx';
 import ProtectedRoute from './components/ProtectedRoute.jsx';
 
@@ -10,7 +10,6 @@ import TripListPage from './pages/trips/TripListPage.jsx';
 import TripCreatePage from './pages/trips/TripCreatePage.jsx';
 import TripDetailPage from './pages/trips/TripDetailPage.jsx';
 import JournalListPage from './pages/journals/JournalListPage.jsx';
-import JournalWritePage from './pages/journals/JournalWritePage.jsx';
 import JournalDetailPage from './pages/journals/JournalDetailPage.jsx';
 import PlaceListPage from './pages/places/PlaceListPage.jsx';
 import PlaceDetailPage from './pages/places/PlaceDetailPage.jsx';
@@ -41,9 +40,9 @@ export default function App() {
         </Route>
 
         <Route path="/journals" element={<JournalListPage />} />
-        <Route path="/journals/new" element={<JournalWritePage />} />
-        <Route path="/journals/new/from/:tripId" element={<JournalWritePage />} />
-        <Route path="/journals/:journalId/edit" element={<JournalWritePage />} />
+        {/* 여행기 쓰기/수정은 여행기 상세 화면(JournalDetailPage)에서 합니다. 쓰기는 여행계획의 일정을 가져와야 해서 /journals/new 는 목록(여행기 쓰기 버튼)으로 보냅니다. */}
+        <Route path="/journals/new" element={<Navigate to="/journals" replace />} />
+        <Route path="/journals/new/from/:tripId" element={<JournalDetailPage />} />
         <Route path="/journals/:journalId" element={<JournalDetailPage />} />
 
         <Route path="/places" element={<PlaceListPage />} />

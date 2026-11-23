@@ -67,8 +67,12 @@ async def list_locations(
     city: str | None = None,
     page: int = 1,
     size: int = 20,
+    min_rating: float | None = None,
+    sort: str = "id",
 ) -> list[dict]:
-    """38 장소 목록·검색. 조건은 넘어온 것만 붙입니다."""
+    """38 장소 목록·검색. 조건은 넘어온 것만 붙입니다.
+    min_rating: 평균 별점(소수 첫째 자리 반올림 값, 화면에 보이는 값)이 이 값 이상인 장소만.
+    sort: id(기본) / rating(별점 높은 순) / rating_asc(별점 낮은 순, 리뷰 없는 장소는 맨 뒤) / reviews(리뷰 많은 순) / reviews_asc(리뷰 적은 순)"""
     stmt = _location_with_rating()
     if category:
         stmt = stmt.where(Location.l_category == category)
@@ -81,7 +85,21 @@ async def list_locations(
             Location.l_city.like(keyword),
             Location.l_add.like(keyword),
         ))
-    stmt = stmt.order_by(Location.l_id).offset((page - 1) * size).limit(size)
+    avg = func.coalesce(func.round(func.avg(LocationReview.lr_rating), 1), 0)
+    count = func.count(LocationReview.lr_id)
+    if min_rating:
+        stmt = stmt.having(avg >= min_rating)
+    if sort == "rating":
+        order = (avg.desc(), count.desc(), Location.l_id)
+    elif sort == "rating_asc":
+        order = ((count == 0), avg.asc(), count.desc(), Location.l_id)   # 리뷰가 없는 장소(0점)는 맨 뒤로
+    elif sort == "reviews":
+        order = (count.desc(), avg.desc(), Location.l_id)
+    elif sort == "reviews_asc":
+        order = (count.asc(), avg.asc(), Location.l_id)
+    else:
+        order = (Location.l_id,)
+    stmt = stmt.order_by(*order).offset((page - 1) * size).limit(size)
 
     result = await db.execute(stmt)
     return [_location_to_dict(*row) for row in result.all()]

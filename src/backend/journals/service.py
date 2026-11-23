@@ -1,4 +1,5 @@
 
+import json
 from datetime import date, datetime, timedelta
 
 from fastapi import HTTPException
@@ -10,8 +11,12 @@ from backend.journals.crud import (
     JournalItemCrud,
     JournalCommentCrud,
     JournalHashtagCrud,
+    JournalLikeCrud,
+    JournalUserCrud,
+    JournalListMetaCrud,
 )
 from backend.journals.schema import (
+    JournalResponse,
     JournalCreate,
     JournalUpdate,
     JournalItemCreate,
@@ -129,18 +134,52 @@ class JournalResponseService:
         return day_number
 
     @staticmethod
+    def place_from_memo(memo):
+        """
+        여행계획 일정의 memo 에는 {"place": 장소, "label": 구분, "title": 제목} JSON 이 들어 있습니다.
+        여행기에는 장소 이름(place)만 쓰고, JSON 이 아닌 글이면 그대로 씁니다.
+        """
+        text = (memo or "").strip()
+        if text.startswith("{"):
+            try:
+                data = json.loads(text)
+            except ValueError:
+                return text
+            if isinstance(data, dict):
+                for key in ("place", "label", "title"):
+                    value = str(data.get(key) or "").strip()
+                    if value:
+                        return value
+                return ""
+        return text
+
+    @staticmethod
+    def photo_from_memo(memo):
+        """일정 memo JSON 의 photo (임시그림 이름 또는 /uploads/... 주소). 없으면 빈 문자열."""
+        text = (memo or "").strip()
+        if text.startswith("{"):
+            try:
+                data = json.loads(text)
+            except ValueError:
+                return ""
+            if isinstance(data, dict):
+                return str(data.get("photo") or "").strip()[:255]
+        return ""
+
+    @staticmethod
     def get_place_title(detail, place_name):
-        """장소명 → 메모 → 기본 제목 순서로 사용"""
+        """장소명 → 메모의 장소 이름 → 기본 제목 순서로 사용"""
         if place_name and place_name.strip():
             return place_name.strip()
 
-        if detail.memo and detail.memo.strip():
-            return detail.memo.strip()
+        title = JournalResponseService.place_from_memo(detail.memo)
+        if title:
+            return title[:100]
 
         return "장소 미지정"
 
     @staticmethod
-    def format_journal(journal):
+    def format_journal(journal, author_name=None):
         return {
             "j_id": journal.j_id,
             "p_id": journal.p_id,
@@ -150,6 +189,7 @@ class JournalResponseService:
             "j_photo": journal.j_photo or "",
             "p_create": journal.p_create,
             "loc": journal.loc,
+            "u_name": author_name,
         }
 
     @staticmethod
@@ -160,14 +200,16 @@ class JournalResponseService:
             "ji_day": item.ji_day,
             "ji_order": item.ji_order,
             "ji_time": JournalResponseService.format_time(item.ji_time),
-            "ji_title": item.ji_title,
+            # 예전에 JSON 그대로 저장된 제목도 장소 이름으로 보여줌
+            "ji_title": JournalResponseService.place_from_memo(item.ji_title) or item.ji_title,
             "ji_content": item.ji_content or "",
             "ji_photo": item.ji_photo or "",
             "ji_rating": item.ji_rating,
         }
 
     @staticmethod
-    def format_comments(comments):
+    def format_comments(comments, names=None):
+        names = names or {}
         return [
             {
                 "jc_id": comment.jc_id,
@@ -175,6 +217,7 @@ class JournalResponseService:
                 "u_id": comment.u_id,
                 "jc_content": comment.jc_content,
                 "jc_create": comment.jc_create,
+                "u_name": names.get(comment.u_id),
             }
             for comment in comments
         ]
@@ -249,7 +292,7 @@ class JournalPlanService:
                     detail, place_name
                 ),
                 "ji_content": "",
-                "ji_photo": "",
+                "ji_photo": JournalResponseService.photo_from_memo(detail.memo),   # 여행계획 일정의 사진을 가져옴
                 "ji_rating": None,
             })
 
@@ -258,7 +301,7 @@ class JournalPlanService:
                 "p_id": plan.p_id,
                 "j_title": plan.p_title,
                 "j_intro": "",
-                "j_photo": "",
+                "j_photo": plan.p_photo or "",   # 여행 대표사진을 여행기 대표사진 기본값으로
                 "loc": plan.loc,
             },
             "days": [days[key] for key in sorted(days)],
@@ -350,11 +393,28 @@ class JournalService:
         if skip < 0 or not 1 <= limit <= 100:
             raise HTTPException(422, "페이지 범위가 올바르지 않습니다.")
 
-        return await JournalCrud.get_list(db, skip, limit)
+        journals = await JournalCrud.get_list(db, skip, limit)
+        return await JournalService._with_author_names(db, journals)
 
     @staticmethod
     async def get_my_journals(db: AsyncSession, user_id: int):
-        return await JournalCrud.get_by_user(db, user_id)
+        journals = await JournalCrud.get_by_user(db, user_id)
+        return await JournalService._with_author_names(db, journals)
+
+    @staticmethod
+    async def _with_author_names(db: AsyncSession, journals):
+        """여행기 목록에 작성자 닉네임(u_name)을 붙여서 돌려줍니다."""
+        names = await JournalUserCrud.get_names(db, [j.u_id for j in journals])
+        likes = await JournalListMetaCrud.like_counts(db, [j.j_id for j in journals])
+        tags = await JournalListMetaCrud.hashtag_names(db, [j.p_id for j in journals])
+        result = []
+        for journal in journals:
+            data = JournalResponse.model_validate(journal).model_dump()
+            data["u_name"] = names.get(journal.u_id)
+            data["like_count"] = likes.get(journal.j_id, 0)
+            data["hashtags"] = tags.get(journal.p_id, [])
+            result.append(data)
+        return result
 
     @staticmethod
     async def get_journal_detail(db: AsyncSession, j_id: int):
@@ -368,10 +428,14 @@ class JournalService:
         )
         start_date = plan.p_start if plan else None
 
+        names = await JournalUserCrud.get_names(
+            db, [journal.u_id] + [c.u_id for c in comments]
+        )
+
         return {
-            "journal": JournalResponseService.format_journal(journal),
+            "journal": JournalResponseService.format_journal(journal, names.get(journal.u_id)),
             "days": JournalResponseService.group_days(items, start_date),
-            "comments": JournalResponseService.format_comments(comments),
+            "comments": JournalResponseService.format_comments(comments, names),
         }
 
     @staticmethod
@@ -588,3 +652,49 @@ class JournalHashtagService:
     async def get_hashtags_by_journal(db: AsyncSession, j_id: int):
         await JournalValidator.check_journal_exists(db, j_id)
         return await JournalHashtagCrud.get_by_journal(db, j_id)
+
+
+
+# ==================================================
+# 7. 좋아요
+# ==================================================
+
+class JournalLikeService:
+
+    @staticmethod
+    async def get_count(db: AsyncSession, j_id: int):
+        await JournalValidator.check_journal_exists(db, j_id)
+        return {"j_id": j_id, "like_count": await JournalLikeCrud.count(db, j_id)}
+
+    @staticmethod
+    async def get_my_likes(db: AsyncSession, user_id: int):
+        likes = await JournalLikeCrud.get_by_user(db, user_id)
+        return [{"j_id": like.j_id, "jl_create": like.jl_create} for like in likes]
+
+    @staticmethod
+    async def add_like(db: AsyncSession, j_id: int, user_id: int):
+        await JournalValidator.check_journal_exists(db, j_id)
+
+        # 이미 눌렀으면 그대로 성공 처리 (중복 클릭/새로고침에도 안전)
+        if await JournalLikeCrud.get(db, j_id, user_id) is None:
+            try:
+                await JournalLikeCrud.create(db, j_id, user_id)
+                await db.commit()
+            except Exception:
+                await db.rollback()
+                raise
+
+        return {"message": "좋아요를 눌렀습니다."}
+
+    @staticmethod
+    async def remove_like(db: AsyncSession, j_id: int, user_id: int):
+        await JournalValidator.check_journal_exists(db, j_id)
+
+        try:
+            await JournalLikeCrud.delete(db, j_id, user_id)
+            await db.commit()
+        except Exception:
+            await db.rollback()
+            raise
+
+        return {"message": "좋아요를 취소했습니다."}

@@ -7,6 +7,7 @@ from backend.login.router import router as login_router
 from backend.plans.router import router as plans_router         # [여행계획]
 from backend.journals.router import router as journals_router   # [여행기]
 from backend.location.router import router as location_router    # [장소]
+from backend.uploads.router import router as uploads_router, view_router as photo_view_router   # [공통] 사진 업로드/보기 (DB 저장)
 
 app = FastAPI(title="여행 계획 플래너 API")
 
@@ -23,6 +24,8 @@ app.include_router(login_router, prefix="/api")
 app.include_router(plans_router, prefix="/api")
 app.include_router(journals_router, prefix="/api")
 app.include_router(location_router, prefix="/api")
+app.include_router(uploads_router, prefix="/api")
+app.include_router(photo_view_router)   # GET /uploads/{이름} - 사진은 DB(photo_files)에서 읽어옴
 
 
 @app.get("/api/health")

@@ -1,7 +1,8 @@
 // [여행계획] 백엔드 /api/plans 호출 + 화면에서 쓰는 trip/일정/예산 모양으로 바꾸는 변환 함수 모음.
 // 백엔드(DB) 모양:  plans(p_id,u_id,p_title,loc,p_start,p_end,p_status) / plan_members / plan_details / budgets / expenses / hashtag
 // 화면(trip) 모양:  { trip_id, title, destination, start_date, end_date, duration, members, member_ids, owner_id, hashtags, photo, completed }
-//  - 공개 여부·사진·일정 대화는 DB에 컬럼이 없어서 서버에 저장하지 않습니다. (사진은 여행지 이름으로 고름)
+//  - 공개 여부(p_public)·대표 사진(p_photo)은 plans 테이블 컬럼에 저장합니다. (사진이 비어 있으면 여행지 이름으로 고름)
+//  - 일정 대화는 DB 테이블이 없어서 서버에 저장하지 않습니다.
 //  - 일정(plan_details)의 장소 이름/구분/제목은 memo 컬럼에 JSON 으로 담습니다. (memo 255자 제한)
 import { request } from './client.js';
 import { photos } from '../data/photos.js';
@@ -29,6 +30,10 @@ export function photoFor(text, fallback = 'tokyo') {
   return photos[hit ? hit[1] : fallback] ?? photos.tokyo;
 }
 
+// 사진 값: 임시 그림은 이름(key), 올린 사진은 주소(/uploads/...)로 저장합니다.
+export const photoSrc = (v) => (v ? (photos[v] ?? (/^(\/|https?:)/.test(v) ? v : '')) : '');
+export const photoKey = (src) => (src ? (Object.keys(photos).find((k) => photos[k] === src) ?? src) : '');
+
 export function toTrip(plan, members = [], tags = []) {
   const start = dateOnly(plan.p_start), end = dateOnly(plan.p_end);
   const owner = members.find((m) => m.u_id === plan.u_id);
@@ -44,9 +49,10 @@ export function toTrip(plan, members = [], tags = []) {
     member_ids: members.map((m) => m.u_id),
     members: members.length || 1,
     hashtags: tags.map((t) => t.h_name),
-    is_public: 'N',
+    is_public: plan.p_public ? 'Y' : 'N',
     completed: !!plan.p_status,
-    photo: photoFor(plan.loc),
+    photo_key: plan.p_photo || '',
+    photo: photoSrc(plan.p_photo) || photoFor(plan.loc),
   };
 }
 
@@ -56,7 +62,7 @@ export function toSchedule(detail, trip) {
   try { extra = JSON.parse(detail.memo || '{}'); } catch { extra = { place: detail.memo || '' }; }
   const day = Math.round((toDay(dateOnly(detail.visit_time)) - toDay(trip.start_date)) / DAY) + 1;
   const place = extra.place ?? '';
-  return { plan_id: detail.pd_id, day: Math.max(day, 1), time: timeOnly(detail.visit_time), label: extra.label ?? '', place, title: extra.title ?? '', photo: photoFor(place, 'tokyo'), comments: [] };
+  return { plan_id: detail.pd_id, day: Math.max(day, 1), time: timeOnly(detail.visit_time), label: extra.label ?? '', place, title: extra.title ?? '', photo_key: extra.photo ?? '', photo: photoSrc(extra.photo) || photoFor(place, 'tokyo'), comments: [] };
 }
 export function fromSchedule(trip, data) {
   const d = new Date(toDay(trip.start_date) + (Number(data.day) - 1) * DAY);
@@ -65,7 +71,7 @@ export function fromSchedule(trip, data) {
   return {
     visit_time: `${date}T${pad(hh)}:${pad(mm)}:00`,
     orders: Number(data.day) * 1440 + hh * 60 + mm,
-    memo: JSON.stringify({ place: data.place, label: data.label || '', title: data.title || '' }),
+    memo: JSON.stringify({ place: data.place, label: data.label || '', title: data.title || '', ...(data.photo_key ? { photo: data.photo_key } : {}) }),
   };
 }
 
@@ -78,16 +84,35 @@ export const planApi = {
     const plans = await request(`/plans/user/${userId}`);
     return Promise.all(plans.map((p) => planApi.get(p.p_id)));
   },
+  // 다른 사람이 공개한 여행계획 (GET /api/plans/public)
+  async listPublic() {
+    const plans = await request('/plans/public');
+    return Promise.all(plans.map((p) => planApi.get(p.p_id)));
+  },
   async get(planId) {
     const [plan, members, tags] = await Promise.all([request(base(planId)), request(`${base(planId)}/members`), request(`${base(planId)}/hashtags`)]);
     return toTrip(plan, members, tags);
   },
-  async create({ user_id, title, destination, start_date, end_date, tags = [] }) {
-    const plan = await request('/plans/', { method: 'POST', body: { u_id: user_id, p_title: title, loc: destination, p_start: `${start_date}T00:00:00`, p_end: `${end_date}T23:59:59` } });
+  async create({ user_id, title, destination, start_date, end_date, tags = [], is_public = 'N', photo_key = null }) {
+    const plan = await request('/plans/', { method: 'POST', body: { u_id: user_id, p_title: title, loc: destination, p_start: `${start_date}T00:00:00`, p_end: `${end_date}T23:59:59`, p_public: is_public === 'Y', p_photo: photo_key } });
     await planApi.setTags(plan.p_id, [], tags);
     return planApi.get(plan.p_id);
   },
+  // 여행 정보(제목·여행지·날짜) 수정. 출발일이 바뀌면 일정도 같은 만큼 날짜를 옮겨서 "n일차" 구성이 그대로 유지됩니다.
+  async updateInfo(trip, { title, destination, start_date, end_date }) {
+    await request(base(trip.trip_id), { method: 'PUT', body: { p_title: title, loc: destination, p_start: `${start_date}T00:00:00`, p_end: `${end_date}T23:59:59` } });
+    const shift = Math.round((toDay(start_date) - toDay(trip.start_date)) / DAY);
+    if (shift !== 0) {
+      const rows = await request(`${base(trip.trip_id)}/details`);
+      for (const r of rows) {
+        const t = new Date(new Date(`${dateOnly(r.visit_time)}T00:00:00`).getTime() + shift * DAY);
+        const visit_time = `${t.getFullYear()}-${pad(t.getMonth() + 1)}-${pad(t.getDate())}T${timeOnly(r.visit_time)}:00`;
+        await request(`${base(trip.trip_id)}/details/${r.pd_id}`, { method: 'PUT', body: { visit_time } });
+      }
+    }
+  },
   remove: (planId) => request(base(planId), { method: 'DELETE' }),
+  setPublic: (planId, isPublic) => request(base(planId), { method: 'PUT', body: { p_public: isPublic === 'Y' } }),
   complete: (planId) => request(base(planId), { method: 'PUT', body: { p_status: true } }), // 여행기는 완료된 여행만 쓸 수 있음
 
   // ----- 해시태그: 이름으로 태그를 만들고(이미 있으면 재사용) 여행에 연결/해제 -----

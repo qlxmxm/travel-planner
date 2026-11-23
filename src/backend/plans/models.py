@@ -18,6 +18,10 @@ class Plans(Base):
     p_start: Mapped[datetime] = mapped_column(TIMESTAMP, nullable=False)
     p_end: Mapped[datetime] = mapped_column(TIMESTAMP, nullable=False)
     p_status: Mapped[bool] = mapped_column(nullable=False)
+    # 공개 여부: False 비공개(멤버만) / True 공개(다른 사람도 일정을 볼 수 있음)
+    p_public: Mapped[bool] = mapped_column(nullable=False, default=False, server_default="0")
+    # 여행 대표 사진: 프론트 사진 목록(data/photos.js)의 이름. 비어 있으면 여행지 이름으로 자동 선택
+    p_photo: Mapped[Optional[str]] = mapped_column(String(50), nullable=True)
 
 
 class Invite(Base):

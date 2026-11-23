@@ -115,6 +115,10 @@ class PlanService:
         return await PlanCrud.get_by_user_id(db, user_id)
 
     @staticmethod
+    async def get_public_plans(db: AsyncSession):
+        return await PlanCrud.get_public(db)
+
+    @staticmethod
     async def update_plan(
         db: AsyncSession,
         plan_id: int,
@@ -137,6 +141,9 @@ class PlanService:
 
         if "p_end" in plan.model_fields_set and plan.p_end is None:
             raise HTTPException(422, "종료 시간은 비울 수 없습니다.")
+
+        if "p_public" in plan.model_fields_set and plan.p_public is None:
+            raise HTTPException(422, "공개 여부는 비울 수 없습니다.")
 
         if "p_title" in plan.model_fields_set and plan.p_title is None:
             raise HTTPException(422, "여행 제목은 비울 수 없습니다.")

@@ -9,6 +9,15 @@ class RegisterIn(BaseModel):
     u_pw: str = Field(min_length=4, max_length=72)   # bcrypt는 72바이트까지만 사용
 
 
+class NameUpdateIn(BaseModel):
+    u_name: str = Field(min_length=1, max_length=100)
+
+
+class PasswordChangeIn(BaseModel):
+    current_pw: str
+    new_pw: str = Field(min_length=4, max_length=72)   # 가입 때와 같은 규칙
+
+
 class LoginIn(BaseModel):
     u_email: EmailStr
     u_pw: str

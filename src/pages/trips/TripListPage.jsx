@@ -1,6 +1,6 @@
-// [여행계획] 여행계획 목록: 내가 만들었거나 초대 코드로 참여한 여행을 보여줍니다. (GET /api/plans/user/{u_id})
-//  - 검색(제목·여행지·해시태그·만든 사람), 해시태그 필터. 삭제는 방장만. "초대 코드로 참여"는 코드를 입력해 멤버가 되는 흐름입니다.
-//  - 서버에 공개 여부 컬럼이 없어서 다른 사람의 여행은 목록에 나오지 않습니다.
+// [여행계획] 여행계획 목록: 내 여행(만들었거나 초대로 참여, GET /api/plans/user/{u_id}) + 다른 사람이 공개한 여행(GET /api/plans/public)
+//  - 위 칩: 전체 / 내 여행계획 / 다른 사람 계획, 검색(제목·여행지·해시태그·만든 사람), 해시태그 필터
+//  - 비공개(N) 여행은 멤버에게만 보입니다. 삭제는 방장만. "초대 코드로 참여"는 코드를 입력해 멤버가 되는 흐름입니다.
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import PageHeader from '../../components/common/PageHeader.jsx';
@@ -11,11 +11,21 @@ import { useAuth } from '../../context/AuthContext.jsx';
 import useAsync from '../../hooks/useAsync.js';
 import { planApi } from '../../api/planApi.js';
 import { tagList } from '../../data/hashtags.js';
+import { isMember } from './tripUtils.js';
+
+const SCOPES = ['전체', '내 여행계획', '다른 사람 계획'];
 
 export default function TripListPage() {
   const { user, isLoggedIn } = useAuth();
-  const { data, loading, error, reload } = useAsync(() => (isLoggedIn ? planApi.listMine(user.user_id) : Promise.resolve([])), [user.user_id]);
+  // 내 여행 + 다른 사람의 공개 여행을 합칩니다. (같은 여행이 두 번 나오지 않게 번호로 중복 제거)
+  const { data, loading, error, reload } = useAsync(async () => {
+    if (!isLoggedIn) return [];
+    const [mine, open] = await Promise.all([planApi.listMine(user.user_id), planApi.listPublic()]);
+    const seen = new Set(mine.map((t) => t.trip_id));
+    return [...mine, ...open.filter((t) => !seen.has(t.trip_id))];
+  }, [user.user_id]);
   const trips = data ?? [];
+  const [scope, setScope] = useState('전체');
   const [q, setQ] = useState('');
   const [tag, setTag] = useState('');
   const [removing, setRemoving] = useState(null);
@@ -26,6 +36,9 @@ export default function TripListPage() {
 
   const kw = q.trim().toLowerCase();
   const list = trips.filter((t) => {
+    const mine = isMember(t, user);
+    if (scope === '내 여행계획' && !mine) return false;
+    if (scope === '다른 사람 계획' && mine) return false;
     if (tag && !t.hashtags.includes(tag)) return false;
     return !kw || [t.title, t.destination, t.owner_name, ...t.hashtags].some((s) => String(s).toLowerCase().includes(kw));
   });
@@ -53,10 +66,13 @@ export default function TripListPage() {
     <>
       <PageHeader
         title="여행계획"
-        description="내가 만들었거나 초대받아 참여한 여행을 한눈에 볼 수 있어요."
+        description="내 여행과 다른 사람들이 공개한 여행계획을 함께 볼 수 있어요."
         actions={<div className="header-actions"><button type="button" className="btn" onClick={() => setJoinOpen(true)}>초대 코드로 참여</button><Link to="/trips/new" className="btn btn--primary">+ 새 여행</Link></div>}
       />
       <div className="list-toolbar">
+        <div className="chip-row">
+          {SCOPES.map((sc) => <button key={sc} type="button" className={`chip${sc === scope ? ' active' : ''}`} onClick={() => setScope(sc)}>{sc}</button>)}
+        </div>
         <input type="search" className="list-search" value={q} onChange={(e) => setQ(e.target.value)} placeholder="제목, 여행지, 해시태그, 만든 사람 검색" aria-label="여행계획 검색" />
       </div>
       <div className="chip-row chip-row--tags" aria-label="해시태그 필터">
@@ -72,7 +88,7 @@ export default function TripListPage() {
         </EmptyState>
       ) : (
         <div className="trip-grid">
-          {list.map((t) => <TripCard key={t.trip_id} trip={t} onDelete={t.owner_id === user.user_id ? setRemoving : undefined} />)}
+          {list.map((t) => <TripCard key={t.trip_id} trip={t} showOwner={!isMember(t, user)} onDelete={t.owner_id === user.user_id ? setRemoving : undefined} />)}
         </div>
       )}
 

@@ -6,10 +6,11 @@
 import { useRef } from 'react';
 import { Link } from 'react-router-dom';
 import Avatar from '../components/common/Avatar.jsx';
+import { useAuth } from '../context/AuthContext.jsx';
 import { useScrollY, useStickyProgress, useEnterProgress, clamp, HEADER_H } from '../hooks/useScroll.js';
 import { sampleTrips } from '../data/sampleTrips.js';
 import { sampleJournals } from '../data/sampleJournals.js';
-import { photos } from '../data/photos.js';
+import { homePhotos } from '../data/homePhotos.js';
 import ctaPhoto from '../assets/photos/cta.jpg'; // 마지막 화면 배경 사진
 
 const MARKERS = ['var(--m1)', 'var(--m2)', 'var(--m3)', 'var(--m4)'];
@@ -89,6 +90,7 @@ function JournalMock({ q, list }) {
 }
 
 export default function HomePage() {
+  const { isLoggedIn } = useAuth();
   const storyRef = useRef(null);
   const ctaRef = useRef(null);
   const y = useScrollY();
@@ -134,9 +136,9 @@ export default function HomePage() {
             </div>
           </div>
           <div className="hero__stage" aria-hidden="true" style={{ transform: `translateY(${-y * 0.18}px) scale(${1 + y * 0.0002})`, opacity: clamp(1.15 - y / 700) }}>
-            <img className="hero__img hero__img--1" src={photos.tokyo} alt="" />
-            <img className="hero__img hero__img--2" src={photos.jeju} alt="" />
-            <img className="hero__img hero__img--3" src={photos.osaka} alt="" />
+            <img className="hero__img hero__img--1" src={homePhotos.skytree} alt="" />
+            <img className="hero__img hero__img--2" src={homePhotos.maldives} alt="" />
+            <img className="hero__img hero__img--3" src={homePhotos.sydney} alt="" />
             <div className="hero__chip hero__chip--1"><span className="plan__time" style={{ background: 'var(--m1)' }}>10:30</span> 나리타 도착</div>
             <div className="hero__chip hero__chip--2"><Avatar name="손오공" /> 5시 반에 가봐요</div>
           </div>
@@ -174,7 +176,9 @@ export default function HomePage() {
       <section className="cta screen" ref={ctaRef} style={{ backgroundImage: `url(${ctaPhoto})`, backgroundPosition: `center ${30 + cta * 40}%` }}>
         <div style={{ opacity: clamp(cta * 1.6), transform: `scale(${0.86 + cta * 0.14}) translateY(${(1 - cta) * 40}px)` }}>
           <h2>다음 여행,<br />지금 시작해요</h2>
-          <Link to="/trips/new" className="btn btn--lg cta__btn">새 여행 만들기</Link>
+          {isLoggedIn
+            ? <Link to="/trips" className="btn btn--lg cta__btn">여행계획 보기</Link>
+            : <Link to="/register" className="btn btn--lg cta__btn">회원가입</Link>}
         </div>
       </section>
     </div>

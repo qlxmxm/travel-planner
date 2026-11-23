@@ -1,6 +1,6 @@
 
 from datetime import datetime
-from sqlalchemy import or_, select
+from sqlalchemy import delete, or_, select, update
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from backend.plans.models import (
@@ -45,6 +45,13 @@ class PlanCrud:
         return result.scalars().all()
 
     @staticmethod
+    async def get_public(db: AsyncSession):
+        result = await db.execute(
+            select(Plans).where(Plans.p_public.is_(True)).order_by(Plans.p_id.desc())
+        )
+        return result.scalars().all()
+
+    @staticmethod
     async def update_by_id(db: AsyncSession, plan_id: int, plan: PlanUpdate):
         db_plan = await PlanCrud.get_by_id(db, plan_id)
         if db_plan is None:
@@ -61,6 +68,16 @@ class PlanCrud:
         db_plan = await PlanCrud.get_by_id(db, plan_id)
         if db_plan is None:
             return None
+
+        # 이 여행에 딸린 데이터를 먼저 지워야 외래키(FK) 오류가 나지 않는다
+        # (예산→지출, 일정, 해시태그 연결, 멤버, 초대 코드). 여행기는 지우지 않고 원본 계획 연결만 끊는다.
+        budget_ids = select(Budgets.b_id).where(Budgets.p_id == plan_id)
+        await db.execute(delete(expenses).where(expenses.b_id.in_(budget_ids)))
+        for model in (Budgets, plan_details, plan_hashtag, PlanMembers, Invite):
+            await db.execute(delete(model).where(model.p_id == plan_id))
+
+        from backend.journals.journal import journals  # 순환 import 방지용으로 함수 안에서 가져옴
+        await db.execute(update(journals).where(journals.p_id == plan_id).values(p_id=None))
 
         await db.delete(db_plan)
         await db.flush()

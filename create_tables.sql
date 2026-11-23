@@ -205,3 +205,21 @@ CREATE TABLE IF NOT EXISTS location_reviews (
 --  확인:  SHOW TABLES;   → 16개가 나와야 합니다.
 -- ============================================================
 
+ALTER TABLE plans
+    ADD COLUMN p_public TINYINT(1) NOT NULL DEFAULT 0 AFTER p_status,   -- 0 비공개(멤버만) / 1 공개
+    ADD COLUMN p_photo  VARCHAR(50) NULL AFTER p_public;                -- 여행 대표 사진 이름
+
+
+
+-- 기존 DB에 사진 저장 테이블만 추가할 때 한 번 실행하세요. (이미 있으면 아무 일도 안 일어납니다)
+-- ---------- 7. 올린 사진 (파일 자체를 DB에 저장) ----------
+CREATE TABLE IF NOT EXISTS photo_files (
+    pf_id      INT          NOT NULL AUTO_INCREMENT,
+    pf_name    VARCHAR(40)  NOT NULL,
+    pf_type    VARCHAR(30)  NOT NULL,
+    pf_data    LONGBLOB     NOT NULL,
+    pf_create  DATETIME     NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    PRIMARY KEY (pf_id),
+    UNIQUE KEY uq_photo_name (pf_name)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+

@@ -1,18 +1,20 @@
 // [여행계획] 새 여행 만들기 폼. 기간(몇 박 며칠)은 날짜를 고르면 자동 계산됩니다.
-// 해시태그도 이 폼에서 정합니다.
-// 저장: POST /api/plans/ (+ 해시태그 연결). 공개 여부·대표 사진은 서버에 저장 컬럼이 없어 뺐습니다(사진은 여행지 이름으로 자동 선택). 친구는 만든 뒤 멤버 탭의 초대 코드로 초대하세요.
+// 공개 여부(Y/N)·대표 사진·해시태그도 이 폼에서 정합니다. 기본값은 비공개(N)입니다.
+// 저장: POST /api/plans/ (+ 해시태그 연결). 친구는 만든 뒤 멤버 탭의 초대 코드로 초대하세요.
 import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext.jsx';
-import { planApi, durationText } from '../../api/planApi.js';
+import { planApi, durationText, photoKey } from '../../api/planApi.js';
 import PageHeader from '../../components/common/PageHeader.jsx';
 import TagPicker from '../../components/common/TagPicker.jsx';
+import PhotoPicker from '../../components/common/PhotoPicker.jsx';
+import { photos } from '../../data/photos.js';
 
 export default function TripCreatePage() {
   const navigate = useNavigate();
   const { user, isLoggedIn } = useAuth();
   const [saving, setSaving] = useState(false);
-  const [form, setForm] = useState({ title: '', destination: '', start_date: '', end_date: '' });
+  const [form, setForm] = useState({ title: '', destination: '', start_date: '', end_date: '', photo: photos.tokyo, is_public: 'N' });
   const [tags, setTags] = useState([]);
   const [error, setError] = useState('');
   const set = (k) => (e) => setForm((f) => ({ ...f, [k]: e.target.value }));
@@ -26,7 +28,7 @@ export default function TripCreatePage() {
     if (!duration) return setError('도착일은 출발일 이후여야 해요.');
     setSaving(true); setError('');
     try {
-      const trip = await planApi.create({ user_id: user.user_id, title: form.title.trim(), destination: form.destination.trim(), start_date: form.start_date, end_date: form.end_date, tags });
+      const trip = await planApi.create({ user_id: user.user_id, title: form.title.trim(), destination: form.destination.trim(), start_date: form.start_date, end_date: form.end_date, tags, is_public: form.is_public, photo_key: photoKey(form.photo) || null });
       navigate(`/trips/${trip.trip_id}`);
     } catch (err) { setError(err.message); setSaving(false); }
   };
@@ -41,7 +43,15 @@ export default function TripCreatePage() {
           <label className="field"><span>출발일</span><input type="date" value={form.start_date} onChange={set('start_date')} /></label>
           <label className="field"><span>도착일</span><input type="date" value={form.end_date} min={form.start_date} onChange={set('end_date')} /></label>
           {duration && <p className="field field--full" style={{ color: 'var(--accent-ink)', fontWeight: 700 }}>{form.destination || '여행'}, {duration}</p>}
+          <div className="field field--full"><span>공개 여부</span>
+            <div className="chip-row" style={{ marginBottom: 0 }}>
+              <button type="button" className={`chip${form.is_public === 'N' ? ' active' : ''}`} aria-pressed={form.is_public === 'N'} onClick={() => setForm((f) => ({ ...f, is_public: 'N' }))}>비공개 (멤버만)</button>
+              <button type="button" className={`chip${form.is_public === 'Y' ? ' active' : ''}`} aria-pressed={form.is_public === 'Y'} onClick={() => setForm((f) => ({ ...f, is_public: 'Y' }))}>공개 (다른 사람도 볼 수 있어요)</button>
+            </div>
+            <small>공개해도 일정 수정과 예산은 멤버만 볼 수 있어요.</small>
+          </div>
           <div className="field field--full"><span>해시태그 (여행 종류)</span><TagPicker value={tags} onChange={setTags} /></div>
+          <div className="field field--full"><span>대표 사진</span><PhotoPicker value={form.photo} onChange={(src) => setForm((f) => ({ ...f, photo: src }))} /></div>
         </div>
         {error && <p className="form-error" role="alert">{error}</p>}
         <div className="form-actions">

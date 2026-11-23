@@ -23,11 +23,20 @@ export function AuthProvider({ children }) {
     await authApi.register(email, name, password);
   }
 
+  // 내 정보 수정: 실패하면 Error(message) 를 던집니다.
+  async function updateName(name) {
+    setUser(await authApi.updateName(name));
+  }
+
+  async function changePassword(currentPw, newPw) {
+    await authApi.changePassword(currentPw, newPw);
+  }
+
   async function logout() {
     setUser(await authApi.logout());
   }
 
-  const value = { user, ready, isLoggedIn: user.user_id !== GUEST_USER.user_id, login, register, logout };
+  const value = { user, ready, isLoggedIn: user.user_id !== GUEST_USER.user_id, login, register, logout, updateName, changePassword };
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 }
 

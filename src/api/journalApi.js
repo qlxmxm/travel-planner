@@ -139,4 +139,27 @@ export const journalApi = {
   getHashtags(journalId) {
     return data(http.get(`/${journalId}/hashtags`));
   },
+
+  // ==================================================
+  // 7. 좋아요
+  // ==================================================
+
+  // 여행기 좋아요 개수 → { j_id, like_count }
+  getLikeCount(journalId) {
+    return data(http.get(`/${journalId}/likes/count`));
+  },
+
+  // 내가 좋아요한 여행기 목록 → [{ j_id, jl_create }] (로그인 필요)
+  getMyLikes() {
+    return data(http.get('/likes/me'));
+  },
+
+  // 좋아요 누르기 / 취소
+  addLike(journalId) {
+    return data(http.post(`/${journalId}/likes`));
+  },
+
+  removeLike(journalId) {
+    return data(http.delete(`/${journalId}/likes`));
+  },
 };

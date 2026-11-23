@@ -14,3 +14,29 @@
 .app-header__auth { display: flex; gap: 8px; align-items: center; }
 
 .app-footer { padding: 32px 24px; text-align: center; color: var(--ink-mute); font-size: 13px; background: var(--bg-soft); }
+
+/* [로그인] 내 정보 패널: 오른쪽에서 슬라이드로 열림 (body 에 직접 그려서 헤더에 안 잘림) */
+.drawer-back { position: fixed; inset: 0; z-index: 60; background: rgba(20,28,40,0); transition: background .26s ease; }
+.drawer-back.on { background: rgba(20,28,40,.35); }
+.drawer { position: absolute; top: 0; right: 0; bottom: 0; width: min(360px, 100vw); background: #fff; box-shadow: -18px 0 50px rgba(0,0,0,.18); display: flex; flex-direction: column; transform: translateX(100%); transition: transform .26s cubic-bezier(.22,.8,.3,1); }
+.drawer.on { transform: translateX(0); }
+.drawer__head { display: flex; align-items: center; justify-content: space-between; padding: 20px 22px 8px; }
+.drawer__head h2 { font-size: 19px; font-weight: 800; }
+.drawer__me { display: flex; align-items: center; gap: 12px; padding: 14px 22px 20px; border-bottom: 1px solid var(--line); }
+.drawer__me div { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+.drawer__me b { font-size: 16px; }
+.drawer__me span { font-size: 13px; color: var(--ink-mute); word-break: break-all; }
+.drawer__sec { padding: 18px 22px; border-bottom: 1px solid var(--line); display: flex; flex-direction: column; gap: 8px; }
+.drawer__sec > label { font-size: 13px; font-weight: 700; color: var(--ink-sub); }
+.drawer__row { display: flex; gap: 8px; }
+.drawer__row input { flex: 1; min-width: 0; }
+.drawer__pw input { flex: none; }
+.drawer__row input, .drawer__pw input { height: 42px; box-sizing: border-box; border: 1px solid var(--line); border-radius: var(--radius-m); padding: 0 12px; font: inherit; font-size: 14px; }
+.drawer__row input:focus, .drawer__pw input:focus { outline: 2px solid var(--accent-soft); border-color: var(--accent); }
+.drawer__toggle { display: flex; justify-content: space-between; align-items: center; border: 0; background: none; padding: 0; font: inherit; font-size: 14px; font-weight: 700; color: var(--ink); cursor: pointer; }
+.drawer__pw { display: flex; flex-direction: column; gap: 8px; margin-top: 6px; }
+.drawer__pw .btn { align-self: flex-end; }
+.drawer__ok { font-size: 13px; font-weight: 600; color: var(--accent-ink); }
+.drawer__err { font-size: 13px; font-weight: 600; color: var(--danger); }
+.drawer__foot { margin-top: auto; padding: 18px 22px 24px; }
+.drawer__logout { width: 100%; color: var(--danger); }

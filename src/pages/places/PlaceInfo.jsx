@@ -1,4 +1,5 @@
-// [장소] 상세 화면 위쪽: 사진 + 이름 + 평균 별점 + 주소/전화/영업시간 + 소개 + 지도 자리
+// [장소] 상세 화면 위쪽: 사진 + 이름 + 평균 별점 + 주소/전화/영업시간 + 소개 + 구글지도
+import MapView from '../../components/common/MapView.jsx';
 import StarRating from '../../components/common/StarRating.jsx';
 import { formatHours, getHoursLabel, imageOfPlace } from './placeUtils.js';
 
@@ -24,7 +25,7 @@ export default function PlaceInfo({ place, reviewSummary }) {
         </div>
       </div>
       <p className="pd__intro">{place.l_intro}</p>
-      <div className="placeholder-box pd__map">지도 자리 (추후 구글지도 API 연동)</div>
+      <MapView lat={place.l_lat} lng={place.l_lng} name={place.l_name} address={place.l_add} className="pd__map" />
     </>
   );
 }

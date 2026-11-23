@@ -35,6 +35,9 @@ class JournalResponse(JournalCreate):
     j_id: int
     p_id: Optional[int] = None   # 원본 계획이 삭제되면 NULL
     p_create: datetime
+    u_name: Optional[str] = None   # 작성자 닉네임 (users.u_name)
+    hashtags: list[str] = Field(default_factory=list)   # 목록 화면용: 원본 여행계획의 해시태그 이름
+    like_count: int = 0                                 # 목록 화면용: 좋아요 수
 
     model_config = ConfigDict(from_attributes=True)
 
@@ -56,7 +59,7 @@ class JournalItemCreate(JournalItemBase):
     ji_order: int = Field(0, ge=0)
     ji_time: Optional[datetime] = None
     ji_title: str = Field(..., min_length=1, max_length=100)
-    ji_rating: int = Field(..., ge=1, le=5)
+    ji_rating: Optional[int] = Field(None, ge=1, le=5)   # 별점은 선택 (없으면 화면에 안 보임)
 
 
 class JournalItemUpdate(JournalItemBase):
@@ -95,6 +98,7 @@ class JournalCommentResponse(JournalCommentCreate):
     """댓글 조회 응답"""
     jc_id: int
     jc_create: datetime
+    u_name: Optional[str] = None   # 댓글 작성자 닉네임 (users.u_name)
 
     model_config = ConfigDict(from_attributes=True)
 
@@ -141,7 +145,7 @@ class JournalPlanPreviewResponse(BaseModel):
 class JournalFromPlanItemCreate(JournalItemBase):
     """원본 일정 ID와 사용자가 작성한 기록"""
     pd_id: int
-    ji_rating: int = Field(..., ge=1, le=5)
+    ji_rating: Optional[int] = Field(None, ge=1, le=5)   # 별점은 선택
 
 
 class JournalFromPlanCreate(JournalBase):

@@ -13,6 +13,8 @@ class PlanBase(BaseModel):
     loc: str = Field(..., min_length=1, max_length=100)
     p_start: datetime
     p_end: datetime
+    p_public: bool = False                              # 공개 여부
+    p_photo: str | None = Field(None, max_length=50)    # 대표 사진 이름
 
 
 class PlanCreate(PlanBase):
@@ -30,6 +32,8 @@ class PlanUpdate(BaseModel):
     p_start: datetime | None = None
     p_end: datetime | None = None
     p_status: bool | None = None
+    p_public: bool | None = None
+    p_photo: str | None = Field(None, max_length=50)
 
 
 class PlanInDB(PlanBase):

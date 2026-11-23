@@ -1,8 +1,8 @@
 
-from sqlalchemy import delete, select
+from sqlalchemy import delete, func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from backend.journals import journals, journals_item, journals_comment
+from backend.journals import journals, journals_item, journals_comment, journals_like
 from backend.journals.schema import (
     JournalCreate,
     JournalUpdate,
@@ -19,6 +19,7 @@ from backend.plans.models import (
     hashtag,
 )
 from backend.location.models import Location
+from backend.login.models import User
 
 
 # ==================================================
@@ -315,3 +316,96 @@ class JournalHashtagCrud:
             .order_by(hashtag.h_id)
         )
         return result.scalars().all()
+
+
+# ==================================================
+# 6. 좋아요 (journals_like: 한 사람이 한 여행기에 한 번만)
+# ==================================================
+
+class JournalLikeCrud:
+
+    @staticmethod
+    async def count(db: AsyncSession, j_id: int) -> int:
+        result = await db.execute(
+            select(func.count()).select_from(journals_like).where(journals_like.j_id == j_id)
+        )
+        return int(result.scalar_one())
+
+    @staticmethod
+    async def get(db: AsyncSession, j_id: int, u_id: int):
+        return await db.get(journals_like, (j_id, u_id))
+
+    @staticmethod
+    async def get_by_user(db: AsyncSession, u_id: int):
+        result = await db.execute(
+            select(journals_like).where(journals_like.u_id == u_id).order_by(journals_like.jl_create.desc())
+        )
+        return result.scalars().all()
+
+    @staticmethod
+    async def create(db: AsyncSession, j_id: int, u_id: int):
+        like = journals_like(j_id=j_id, u_id=u_id)
+        db.add(like)
+        await db.flush()
+        return like
+
+    @staticmethod
+    async def delete(db: AsyncSession, j_id: int, u_id: int):
+        like = await db.get(journals_like, (j_id, u_id))
+        if like is None:
+            return None
+        await db.delete(like)
+        await db.flush()
+        return like
+
+
+# ==================================================
+# 7. 작성자 이름 조회 (users.u_name)
+# ==================================================
+
+class JournalUserCrud:
+
+    @staticmethod
+    async def get_names(db: AsyncSession, user_ids) -> dict:
+        """{u_id: u_name}. 화면에 '사용자 3' 대신 닉네임을 보여주기 위해 씁니다."""
+        ids = {int(u) for u in user_ids if u is not None}
+        if not ids:
+            return {}
+        result = await db.execute(select(User.u_id, User.u_name).where(User.u_id.in_(ids)))
+        return {u_id: name for u_id, name in result.all()}
+
+
+# ==================================================
+# 8. 목록 화면용 묶음 조회 (해시태그 이름, 좋아요 수)
+# ==================================================
+
+class JournalListMetaCrud:
+
+    @staticmethod
+    async def like_counts(db: AsyncSession, journal_ids) -> dict:
+        ids = {int(j) for j in journal_ids}
+        if not ids:
+            return {}
+        result = await db.execute(
+            select(journals_like.j_id, func.count())
+            .where(journals_like.j_id.in_(ids))
+            .group_by(journals_like.j_id)
+        )
+        return {j_id: int(n) for j_id, n in result.all()}
+
+    @staticmethod
+    async def hashtag_names(db: AsyncSession, plan_ids) -> dict:
+        """{p_id: [해시태그 이름, ...]} (여행기에는 원본 여행계획의 해시태그를 그대로 씁니다)"""
+        ids = {int(p) for p in plan_ids if p is not None}
+        if not ids:
+            return {}
+        result = await db.execute(
+            select(plan_hashtag.p_id, hashtag.h_name)
+            .join(hashtag, hashtag.h_id == plan_hashtag.h_id)
+            .where(plan_hashtag.p_id.in_(ids))
+            .order_by(plan_hashtag.p_id, hashtag.h_id)
+        )
+        tags: dict = {}
+        for p_id, name in result.all():
+            tags.setdefault(p_id, []).append(name)
+        return tags

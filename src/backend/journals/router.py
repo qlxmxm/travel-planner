@@ -26,6 +26,7 @@ from backend.journals.service import (
     JournalItemService,
     JournalCommentService,
     JournalHashtagService,
+    JournalLikeService,
 )
 
 
@@ -89,6 +90,15 @@ async def get_my_journals(
     return await JournalService.get_my_journals(
         db, user.u_id
     )
+
+
+# 좋아요한 여행기 목록 (고정 경로라서 /{j_id} 계열보다 먼저 선언해야 합니다)
+@router.get("/likes/me")
+async def get_my_likes(
+    db: AsyncSession = Depends(get_db),
+    user: User = Depends(get_current_user),
+):
+    return await JournalLikeService.get_my_likes(db, user.u_id)
 
 
 # ==================================================
@@ -249,3 +259,33 @@ async def get_hashtags(
         {"h_id": tag.h_id, "h_name": tag.h_name}
         for tag in hashtags
     ]
+
+
+# ==================================================
+# 7. 좋아요
+# ==================================================
+
+@router.get("/{j_id}/likes/count")
+async def get_like_count(
+    j_id: int,
+    db: AsyncSession = Depends(get_db),
+):
+    return await JournalLikeService.get_count(db, j_id)
+
+
+@router.post("/{j_id}/likes", response_model=JournalMessageResponse)
+async def add_like(
+    j_id: int,
+    db: AsyncSession = Depends(get_db),
+    user: User = Depends(get_current_user),
+):
+    return await JournalLikeService.add_like(db, j_id, user.u_id)
+
+
+@router.delete("/{j_id}/likes", response_model=JournalMessageResponse)
+async def remove_like(
+    j_id: int,
+    db: AsyncSession = Depends(get_db),
+    user: User = Depends(get_current_user),
+):
+    return await JournalLikeService.remove_like(db, j_id, user.u_id)

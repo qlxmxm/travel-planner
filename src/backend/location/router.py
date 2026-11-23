@@ -20,12 +20,14 @@ async def get_locations(
     category: Literal["맛집", "관광명소", "숙소"] | None = None,  # 이 3개 말고 다른 값이면 422
     q: str | None = Query(None, description="이름·도시·주소 검색어"),
     city: str | None = None,
+    min_rating: float | None = Query(None, ge=0, le=5, description="평균 별점이 이 값 이상인 장소만"),
+    sort: Literal["id", "rating", "rating_asc", "reviews", "reviews_asc"] = Query("id", description="id 기본순 / rating 별점 높은 순 / rating_asc 별점 낮은 순 / reviews 리뷰 많은 순 / reviews_asc 리뷰 적은 순"),
     page: int = Query(1, ge=1),
     size: int = Query(20, ge=1, le=100),
     db: AsyncSession = Depends(get_db),
 ):
-    """38 장소 목록·검색  예) /api/location?category=맛집&city=부산"""
-    return await service.list_locations(db, category, q, city, page, size)
+    """38 장소 목록·검색  예) /api/location?category=맛집&city=부산&min_rating=4&sort=rating"""
+    return await service.list_locations(db, category, q, city, page, size, min_rating, sort)
 
 
 @router.get("/locations/{l_id}", response_model=LocationDetailOut)
