@@ -8,9 +8,9 @@
 // 초대 코드는 만료일이 지나면 쓸 수 없고 한 번 쓰면 사용 처리돼요. 코드로 참여하는 곳은 "여행계획" 목록의 [초대 코드로 참여] 입니다.
 import { useCallback, useEffect, useState } from 'react';
 import { useOutletContext } from 'react-router-dom';
-import Avatar from '../../components/common/Avatar.jsx';
-import EmptyState from '../../components/common/EmptyState.jsx';
-import { planApi } from '../../api/planApi.js';
+import Avatar from '../../../components/common/Avatar.jsx';
+import EmptyState from '../../../components/common/EmptyState.jsx';
+import { planApi } from '../../../api/planApi.js';
 
 const rand = () => Math.random().toString(36).slice(2, 6).toUpperCase().padEnd(4, 'X');
 const newCode = () => `${rand()}-${rand()}`; // 예: 7K2P-Q9XD (영문·숫자만)

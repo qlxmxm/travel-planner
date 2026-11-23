@@ -5,13 +5,13 @@
 // 스크롤 값은 hooks/useScroll.js 의 훅으로 받아서 state 로 다루기 때문에, 값이 바뀔 때마다 React 가 화면을 다시 그립니다.
 import { useRef } from 'react';
 import { Link } from 'react-router-dom';
-import Avatar from '../components/common/Avatar.jsx';
-import { useAuth } from '../context/AuthContext.jsx';
-import { useScrollY, useStickyProgress, useEnterProgress, clamp, HEADER_H } from '../hooks/useScroll.js';
-import { sampleTrips } from '../data/sampleTrips.js';
-import { sampleJournals } from '../data/sampleJournals.js';
-import { homePhotos } from '../data/homePhotos.js';
-import ctaPhoto from '../assets/photos/cta.jpg'; // 마지막 화면 배경 사진
+import Avatar from '../../components/common/Avatar.jsx';
+import { useAuth } from '../../context/AuthContext.jsx';
+import { useScrollY, useStickyProgress, useEnterProgress, clamp, HEADER_H } from '../../hooks/useScroll.js';
+import { sampleTrips } from '../../data/sampleTrips.js';
+import { sampleJournals } from '../../data/sampleJournals.js';
+import { homePhotos } from '../../data/homePhotos.js';
+import ctaPhoto from '../../assets/photos/cta.jpg'; // 마지막 화면 배경 사진
 
 const MARKERS = ['var(--m1)', 'var(--m2)', 'var(--m3)', 'var(--m4)'];
 const STEPS = [

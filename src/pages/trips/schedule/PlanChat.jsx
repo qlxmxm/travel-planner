@@ -3,8 +3,8 @@
 //  - 내가 쓴 말풍선에만 수정/삭제 버튼이 보임 (본인 글만 가능)
 // TODO: 서버 저장 API 연결, 권한 체크는 아서와 함께
 import { useState } from 'react';
-import { useAuth } from '../../context/AuthContext.jsx';
-import Avatar from '../../components/common/Avatar.jsx';
+import { useAuth } from '../../../context/AuthContext.jsx';
+import Avatar from '../../../components/common/Avatar.jsx';
 
 export default function PlanChat({ plan, onChange, onClose }) {
   const { user } = useAuth();

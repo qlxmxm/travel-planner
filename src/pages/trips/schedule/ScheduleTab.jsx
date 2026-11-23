@@ -6,8 +6,8 @@ import { useEffect, useState } from 'react';
 import { useOutletContext } from 'react-router-dom';
 import PlanChat from './PlanChat.jsx';
 import PlanFormModal from './PlanFormModal.jsx';
-import Modal from '../../components/common/Modal.jsx';
-import { planApi } from '../../api/planApi.js';
+import Modal from '../../../components/common/Modal.jsx';
+import { planApi } from '../../../api/planApi.js';
 
 const MARKERS = ['var(--m1)', 'var(--m2)', 'var(--m3)', 'var(--m4)', 'var(--m5)'];
 const sortPlans = (list) => [...list].sort((a, b) => a.day - b.day || a.time.localeCompare(b.time));

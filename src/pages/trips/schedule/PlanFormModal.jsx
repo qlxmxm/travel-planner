@@ -1,10 +1,10 @@
 // [여행계획] 일정 추가/수정 팝업 폼. plan 이 있으면 "수정", 없으면 "추가".
 // 저장은 ScheduleTab 이 API 로 합니다. 사진은 임시 그림 중에서 고르거나 내 사진을 올릴 수 있고, 안 고르면 장소 이름으로 자동 선택돼요.
 import { useEffect, useState } from 'react';
-import Modal from '../../components/common/Modal.jsx';
-import PhotoPicker from '../../components/common/PhotoPicker.jsx';
-import { photoKey, photoSrc } from '../../api/planApi.js';
-import { placeApi } from '../../api/placeApi.js';
+import Modal from '../../../components/common/Modal.jsx';
+import PhotoPicker from '../../../components/common/PhotoPicker.jsx';
+import { photoKey, photoSrc } from '../../../api/planApi.js';
+import { placeApi } from '../../../api/placeApi.js';
 
 export default function PlanFormModal({ open, plan, days, defaultDay, onSave, onClose }) {
   const isEdit = !!plan;

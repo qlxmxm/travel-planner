@@ -4,8 +4,8 @@
 // TODO: 지출 카테고리(식비/교통 등)·통계 그래프
 import { useCallback, useEffect, useState } from 'react';
 import { useOutletContext } from 'react-router-dom';
-import EmptyState from '../../components/common/EmptyState.jsx';
-import { planApi } from '../../api/planApi.js';
+import EmptyState from '../../../components/common/EmptyState.jsx';
+import { planApi } from '../../../api/planApi.js';
 
 const KINDS = { budget: '예산', add: '추가 예산', used: '지출' };
 const won = (n) => `${n.toLocaleString('ko-KR')}원`;

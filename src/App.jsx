@@ -3,7 +3,7 @@ import { Routes, Route, Navigate } from 'react-router-dom';
 import Layout from './components/layout/Layout.jsx';
 import ProtectedRoute from './components/ProtectedRoute.jsx';
 
-import HomePage from './pages/HomePage.jsx';
+import HomePage from './pages/home/HomePage.jsx';
 import LoginPage from './pages/auth/LoginPage.jsx';
 import RegisterPage from './pages/auth/RegisterPage.jsx';
 import TripListPage from './pages/trips/TripListPage.jsx';
@@ -14,9 +14,9 @@ import JournalDetailPage from './pages/journals/JournalDetailPage.jsx';
 import PlaceListPage from './pages/places/PlaceListPage.jsx';
 import PlaceDetailPage from './pages/places/PlaceDetailPage.jsx';
 import PlacesTab from './pages/places/PlacesTab.jsx';
-import ScheduleTab from './pages/schedule/ScheduleTab.jsx';
-import BudgetTab from './pages/budget/BudgetTab.jsx';
-import MembersTab from './pages/members/MembersTab.jsx';
+import ScheduleTab from './pages/trips/schedule/ScheduleTab.jsx';
+import BudgetTab from './pages/trips/budget/BudgetTab.jsx';
+import MembersTab from './pages/trips/members/MembersTab.jsx';
 import NotFoundPage from './pages/NotFoundPage.jsx';
 
 export default function App() {
