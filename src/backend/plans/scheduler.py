@@ -1,7 +1,7 @@
 from apscheduler.schedulers.asyncio import AsyncIOScheduler
 
 from backend.db import AsyncSessionLocal
-from backend.plans.crud import PlanCrud
+from backend.plans.trips.crud import PlanCrud
 
 
 scheduler = AsyncIOScheduler(timezone="Asia/Seoul")
