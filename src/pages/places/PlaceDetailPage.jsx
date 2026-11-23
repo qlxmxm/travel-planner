@@ -16,11 +16,13 @@ import { getLocation } from '../../api/locationAPI.js';
 
 
 export default function PlaceDetailPage() {
+  
   const placeId = Number(useParams().placeId);
   const { user } = useAuth();
   const { reviews, myReview, addReview, updateReview, deleteReview } = useReviews(placeId, user);
   const[place, setPlace]=useState(null);
   const[loading, setLoading] = useState(true)
+
   useEffect(()=>{
     getLocation(placeId).then((data) => {setPlace(data); setLoading(false)})
                         .catch(() => {setLoading(false)})
