@@ -42,6 +42,13 @@ async def create_plan(
 ):
     return await PlanService.create_plan(db=db, plan=plan)
 
+@router.get("/", response_model=list[PlanInDB]) # 필요시 목록 전용 응답 스키마로 교체
+async def get_plans(
+    db: AsyncSession = Depends(get_db),
+    user: User = Depends(get_current_user), # 로그인 유저 기준 (비로그인 허용 시 Optional 처리)
+):
+    return await PlanService.get_accessible_plans(db=db, user_id=user.u_id)
+
 
 @router.get("/user/{user_id}", response_model=list[PlanInDB])
 async def get_plans_by_user(

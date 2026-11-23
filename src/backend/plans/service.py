@@ -107,10 +107,15 @@ class PlanService:
     async def create_plan(db: AsyncSession, plan: PlanCreate):
         try:
             db_plan = await PlanCrud.create(db, plan)
+            await PlanMemberCrud.create(db, db_plan.p_id, plan.u_id, role="owner")
             return await PlanTransaction.save(db, db_plan)
         except Exception:
             await db.rollback()
             raise
+
+    @staticmethod
+    async def get_accessible_plans(db: AsyncSession, user_id: int):
+        return await PlanCrud.get_accessible_plans(db, user_id)
 
     @staticmethod
     async def get_plan_by_id(db: AsyncSession, plan_id: int):

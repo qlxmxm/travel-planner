@@ -16,6 +16,7 @@ class PlanBase(BaseModel):
 
 
 class PlanCreate(PlanBase):
+    p_status: bool = False
 
     @model_validator(mode="after")
     def check_dates(self):

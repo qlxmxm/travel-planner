@@ -1,6 +1,6 @@
 
 from datetime import datetime
-from sqlalchemy import select, update
+from sqlalchemy import select, update, or_
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from backend.plans.models import (
@@ -23,10 +23,28 @@ class PlanCrud:
 
     @staticmethod
     async def create(db: AsyncSession, plan: PlanCreate):
-        db_plan = Plans(**plan.model_dump(), p_status=False)
+        db_plan = Plans(**plan.model_dump())
         db.add(db_plan)
         await db.flush()
         return db_plan
+
+    @staticmethod
+    async def get_accessible_plans(db: AsyncSession, user_id: int):
+        # 내가 방장(u_id)이거나, 멤버(PlanMembers)로 참여했거나, 공개(p_status=True)된 여행 조회
+        member_plan_ids = select(PlanMembers.p_id).where(PlanMembers.u_id == user_id)
+        stmt = (
+            select(Plans)
+            .where(
+                or_(
+                    Plans.u_id == user_id,
+                    Plans.p_id.in_(member_plan_ids),
+                    Plans.p_status.is_(True),
+                )
+            )
+            .order_by(Plans.p_id.desc())
+        )
+        result = await db.execute(stmt)
+        return result.scalars().all()
 
     @staticmethod
     async def get_by_id(db: AsyncSession, plan_id: int):
