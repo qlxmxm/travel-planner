@@ -3,20 +3,20 @@ import { useEffect, useState } from 'react';
 import { useOutletContext } from 'react-router-dom';
 import Avatar from '../../components/common/Avatar.jsx';
 import EmptyState from '../../components/common/EmptyState.jsx';
-import { sampleMembers } from '../../data/sampleTrips.js';
 import { request } from '../../api/client.js';
 
 export default function MembersTab() {
-  const { trip, canEdit, owner } = useOutletContext();
+  const { trip, planMembers, canEdit, owner } = useOutletContext();
   const planId = trip.p_id;
-  const [members, setMembers] = useState(() =>
-    sampleMembers
-      .filter((m) => trip.member_ids.includes(m.user_id))
-      .map((m) => ({
-        ...m,
-        role: m.user_id === trip.owner_id ? '방장' : '참여자',
-      }))
-  );
+  const members = [
+  {
+    u_id: trip.owner_id,
+    role: 'owner',
+  },
+  ...planMembers.filter(
+    (m) => Number(m.u_id) !== Number(trip.owner_id)
+  ),
+];
 
   const [invites, setInvites] = useState([]);
   const [loading, setLoading] = useState(false);
@@ -183,41 +183,45 @@ export default function MembersTab() {
         <p>초대 코드는 여행 방장만 발급할 수 있습니다.</p>
       )}
 
-      <ul className="card" style={{ marginTop: 16 }}>
-        {members.map((m) => (
-          <li
-            key={m.user_id}
-            style={{
-              padding: '16px 22px',
-              borderBottom: '1px solid var(--line)',
-              display: 'flex',
-              alignItems: 'center',
-              gap: 12,
-            }}
-          >
-            <Avatar name={m.user_name} />
-            <b>{m.user_name}</b>
+      
+  <ul className="card" style={{ marginTop: 16 }}>
+    {members.map((m) => {
+      const isOwner = Number(m.u_id) === Number(trip.owner_id);
+      const displayName = `사용자 ${m.u_id}`;
 
-            <span style={{ marginLeft: 'auto', color: 'var(--ink-sub)' }}>
-              {m.role}
-            </span>
+      return (
+        <li
+          key={m.u_id}
+          style={{
+            padding: '16px 22px',
+            borderBottom: '1px solid var(--line)',
+            display: 'flex',
+            alignItems: 'center',
+            gap: 12,
+          }}
+        >
+          <Avatar name={displayName} />
+          <b>{displayName}</b>
 
-            {owner && m.role !== '방장' && (
-              <button
-                type="button"
-                className="btn btn--text"
-                onClick={() =>
-                  setMembers((prev) =>
-                    prev.filter((item) => item.user_id !== m.user_id)
-                  )
-                }
-              >
-                내보내기
-              </button>
-            )}
-          </li>
-        ))}
-      </ul>
+          <span style={{ marginLeft: 'auto', color: 'var(--ink-sub)' }}>
+            {isOwner ? '방장' : '참여자'}
+          </span>
+
+          {owner && !isOwner && (
+            <button
+              type="button"
+              className="btn btn--text"
+              disabled
+              title="멤버 내보내기 API 연결 예정"
+            >
+              내보내기
+            </button>
+          )}
+        </li>
+      );
+    })}
+  </ul>
+
     </>
   );
 }
