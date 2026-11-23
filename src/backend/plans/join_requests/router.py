@@ -21,12 +21,14 @@ async def create_join_request(
     db: AsyncSession = Depends(get_db),
     user: User = Depends(get_current_user),
 ):
+    # 저장(commit)하고 나면 user 의 값이 만료돼서 읽을 수 없으므로, 이름은 저장 전에 미리 꺼내 둡니다.
+    user_name = user.u_name
     req = await JoinRequestService.create_request(
         db=db, plan_id=plan_id, user_id=user.u_id
     )
     return {
         "jr_id": req.jr_id, "p_id": req.p_id, "u_id": req.u_id,
-        "u_name": user.u_name, "jr_create": req.jr_create,
+        "u_name": user_name, "jr_create": req.jr_create,
     }
 
 
