@@ -1,6 +1,6 @@
 
 from datetime import datetime
-from sqlalchemy import select, update
+from sqlalchemy import delete, select, update
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from backend.plans.models import (
@@ -29,9 +29,38 @@ class PlanCrud:
         await db.flush()
         return db_plan
 
+    
     @staticmethod
-    async def get_by_id(db: AsyncSession, plan_id: int):
-        return await db.get(Plans, plan_id)
+    async def delete_by_id(db: AsyncSession, plan_id: int):
+        db_plan = await PlanCrud.get_by_id(db, plan_id)
+        if db_plan is None:
+            return None
+
+        budget_ids = select(Budgets.b_id).where(Budgets.p_id == plan_id)
+
+        await db.execute(
+            delete(expenses).where(expenses.b_id.in_(budget_ids))
+        )
+        await db.execute(
+            delete(Budgets).where(Budgets.p_id == plan_id)
+        )
+        await db.execute(
+            delete(plan_details).where(plan_details.p_id == plan_id)
+        )
+        await db.execute(
+            delete(plan_hashtag).where(plan_hashtag.p_id == plan_id)
+        )
+        await db.execute(
+            delete(PlanMembers).where(PlanMembers.p_id == plan_id)
+        )
+        await db.execute(
+            delete(Invite).where(Invite.p_id == plan_id)
+        )
+
+        await db.delete(db_plan)
+        await db.flush()
+        return db_plan
+
 
     @staticmethod
     async def get_by_user_id(db: AsyncSession, user_id: int):
