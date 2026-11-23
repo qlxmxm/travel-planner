@@ -38,6 +38,13 @@ class PlanInDB(PlanBase):
 
     model_config = ConfigDict(from_attributes=True)
 
+class PlanMemberDetail(BaseModel):
+    pm_id: int | None = None
+    p_id: int
+    u_id: int
+    u_name: str
+    role: str
+
 
 # ==================================================
 # 2. 초대 코드 (invite)

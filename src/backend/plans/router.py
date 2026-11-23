@@ -11,7 +11,7 @@ from backend.plans.schemas import (
     PlanHashtagCreate, PlanHashtagInDB,
     PlanDetailCreate, PlanDetailUpdate, PlanDetailInDB,
     BudgetCreate, BudgetUpdate, BudgetInDB,
-    ExpenseCreate, ExpenseUpdate, ExpenseInDB,
+    ExpenseCreate, ExpenseUpdate, ExpenseInDB,PlanMemberDetail,
 )
 from backend.plans.service import (
     PlanService,
@@ -202,13 +202,18 @@ async def create_member(
 
 @router.get(
     "/{plan_id}/members",
-    response_model=list[PlanMemberInDB],
+    response_model=list[PlanMemberDetail],
 )
 async def get_members_by_plan(
     plan_id: int,
     db: AsyncSession = Depends(get_db),
+    user: User = Depends(get_current_user),
 ):
-    return await PlanMemberService.get_members_by_plan(db, plan_id)
+    return await PlanMemberService.get_members_by_plan(
+        db=db,
+        plan_id=plan_id,
+        user_id=user.u_id,
+    )
 
 
 @router.get(

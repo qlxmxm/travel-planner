@@ -8,15 +8,7 @@ import { request } from '../../api/client.js';
 export default function MembersTab() {
   const { trip, planMembers, canEdit, owner } = useOutletContext();
   const planId = trip.p_id;
-  const members = [
-  {
-    u_id: trip.owner_id,
-    role: 'owner',
-  },
-  ...planMembers.filter(
-    (m) => Number(m.u_id) !== Number(trip.owner_id)
-  ),
-];
+  const members = planMembers;
 
   const [invites, setInvites] = useState([]);
   const [loading, setLoading] = useState(false);
@@ -187,7 +179,7 @@ export default function MembersTab() {
   <ul className="card" style={{ marginTop: 16 }}>
     {members.map((m) => {
       const isOwner = Number(m.u_id) === Number(trip.owner_id);
-      const displayName = `사용자 ${m.u_id}`;
+      const displayName = m.u_name;
 
       return (
         <li

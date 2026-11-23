@@ -11,6 +11,7 @@ from backend.plans.schemas import (
     PlanCreate, PlanUpdate, BudgetCreate, BudgetUpdate
 )
 
+from backend.login.models import User
 
 from zoneinfo import ZoneInfo
 
@@ -180,6 +181,23 @@ class PlanMemberCrud:
             .order_by(PlanMembers.pm_id)
         )
         return result.scalars().all()
+
+
+    @staticmethod
+    async def get_by_plan_with_names(db: AsyncSession, plan_id: int):
+        result = await db.execute(
+            select(
+                PlanMembers.pm_id,
+                PlanMembers.p_id,
+                PlanMembers.u_id,
+                User.u_name,
+                PlanMembers.role,
+            )
+            .join(User, PlanMembers.u_id == User.u_id)
+            .where(PlanMembers.p_id == plan_id)
+            .order_by(PlanMembers.pm_id)
+        )
+        return result.mappings().all()
 
     @staticmethod
     async def get_by_plan_and_user(
