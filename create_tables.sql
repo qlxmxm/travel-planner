@@ -168,7 +168,7 @@ CREATE TABLE IF NOT EXISTS journals_item (
     ji_title    VARCHAR(100) NOT NULL,
     ji_content  TEXT         NULL,
     ji_photo    VARCHAR(255) NULL,
-    ji_rating   TINYINT      NOT NULL,
+    ji_rating   TINYINT      NULL,
     PRIMARY KEY (ji_id),
     CONSTRAINT fk_ji_journal FOREIGN KEY (j_id) REFERENCES journals (j_id) ON DELETE CASCADE,
     CONSTRAINT ck_ji_day_min     CHECK (ji_day >= 1),
