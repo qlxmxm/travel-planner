@@ -1,121 +1,159 @@
-// [여행계획] 여행 상세의 틀: 대표 사진 + "도쿄, 4박 5일 여행일정입니다." + 탭 + 탭별 내용(Outlet)
-//   일정 → schedule/ScheduleTab (손오공) · 예산 → budget/BudgetTab · 장소 → places/PlacesTab (손오공) · 멤버 → members/MembersTab (아서)
-//  - 멤버만 일정을 고치고 예산·멤버 탭을 볼 수 있습니다. 공개(Y)된 다른 사람의 여행은 일정을 읽기만 할 수 있어요.
-//  - 방장은 공개 여부(Y/N)와 해시태그를 바꿀 수 있습니다.
-//  - 여행 기간(end_date)이 지나면 "여행기에 추가" 버튼이 나타나고, 누르면 이 여행의 일정이 여행기 작성 화면으로 넘어갑니다.
-// TODO: GET /trips/{id}, PUT /trips/{id}(공개 여부), 해시태그 API, POST /trips/{id}/to-journal 연결
+
 import { useEffect, useState } from 'react';
 import { Link, Outlet, useParams } from 'react-router-dom';
 import TabNav from '../../components/common/TabNav.jsx';
-import Tags from '../../components/common/Tags.jsx';
-import TagPicker from '../../components/common/TagPicker.jsx';
-import Modal from '../../components/common/Modal.jsx';
 import EmptyState from '../../components/common/EmptyState.jsx';
 import { useAuth } from '../../context/AuthContext.jsx';
-import { sampleTrips, isMember, canSee, isEnded } from '../../data/sampleTrips.js';
 import { request } from '../../api/client.js';
 
 export default function TripDetailPage() {
   const { tripId } = useParams();
   const { user } = useAuth();
+
   const [plan, setPlan] = useState(null);
   const [planMembers, setPlanMembers] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
-  const found = sampleTrips.find((t) => String(t.trip_id) === tripId); // TODO: GET /trips/{id}
-  const [isPublic, setIsPublic] = useState(found?.is_public ?? 'N');
-  const [tags, setTags] = useState(found?.hashtags ?? []);
-  const [tagOpen, setTagOpen] = useState(false);
 
   useEffect(() => {
-  let cancelled = false;
+    let cancelled = false;
 
-  async function loadPlan() {
-    setLoading(true);
-    setError('');
+    async function loadPlan() {
+      setLoading(true);
+      setError('');
+      setPlan(null);
+      setPlanMembers([]);
 
-    try {
-      const [planData, membersData] = await Promise.all([
-        request(`/plans/${tripId}`),
-        request(`/plans/${tripId}/members`),
-      ]);
+      try {
+        const [planData, membersData] = await Promise.all([
+          request(`/plans/${tripId}`),
+          request(`/plans/${tripId}/members`),
+        ]);
 
-      if (cancelled) return;
+        if (cancelled) return;
 
-      setPlan(planData);
-      setPlanMembers(membersData);
-    } catch (err) {
-      if (!cancelled) {
-        setError(err.message || '여행 정보를 불러오지 못했습니다.');
+        setPlan(planData);
+        setPlanMembers(membersData);
+      } catch (err) {
+        if (!cancelled) {
+          setError(err.message || '여행 정보를 불러오지 못했습니다.');
+        }
+      } finally {
+        if (!cancelled) setLoading(false);
       }
-    } finally {
-      if (!cancelled) setLoading(false);
     }
-  }
 
-  loadPlan();
+    loadPlan();
 
-  return () => {
-    cancelled = true;
-  };
-}, [tripId]);
-
+    return () => {
+      cancelled = true;
+    };
+  }, [tripId]);
 
   if (loading) {
     return <p>여행 정보를 불러오는 중입니다.</p>;
   }
 
   if (error || !plan) {
-    return <p>{error || '여행 정보를 찾을 수 없습니다.'}</p>;
+    return (
+      <EmptyState
+        title="여행 정보를 불러올 수 없어요"
+        description={error || '여행계획을 찾을 수 없습니다.'}
+      >
+        <Link to="/trips" className="btn btn--primary">
+          여행계획 목록으로
+        </Link>
+      </EmptyState>
+    );
   }
 
-
-
-  if (!found || !canSee({ ...found, is_public: isPublic }, user)) {
-    return <EmptyState icon="🔒" title="볼 수 없는 여행이에요" description="없는 여행이거나 비공개 여행이에요."><Link to="/trips" className="btn btn--primary">여행계획 목록으로</Link></EmptyState>;
-  }
-  const trip = {
-  ...found,
-  p_id: plan.p_id,
-  is_public: isPublic,
-  hashtags: tags,
-};
-  const owner = Number(plan.u_id) === Number(user.user_id);
+  const userId = Number(user?.user_id);
+  const owner = Number(plan.u_id) === userId;
 
   const member = owner || planMembers.some(
-    (m) => Number(m.u_id) === Number(user.user_id)
+    (m) => Number(m.u_id) === userId
   );
 
-  const ended = isEnded(trip);
+  // TODO: 공개 여행 조회 권한은 백엔드 공개 여부 기능과 연결
+  if (!member) {
+    return (
+      <EmptyState
+        icon="🔒"
+        title="접근할 수 없는 여행이에요"
+        description="여행 멤버만 상세 정보를 볼 수 있습니다."
+      >
+        <Link to="/trips" className="btn btn--primary">
+          여행계획 목록으로
+        </Link>
+      </EmptyState>
+    );
+  }
+
+  const startDate = plan.p_start.slice(0, 10);
+  const endDate = plan.p_end.slice(0, 10);
+  const ended = plan.p_status === true;
+
+  // TODO: 여행 세부 일정 API 연결 후 plans 교체
+  const trip = {
+    p_id: plan.p_id,
+    trip_id: plan.p_id,
+    owner_id: plan.u_id,
+    title: plan.p_title,
+    destination: plan.loc,
+    start_date: startDate,
+    end_date: endDate,
+    members: new Set([
+      Number(plan.u_id),
+      ...planMembers.map((m) => Number(m.u_id)),
+    ]).size,
+    member_ids: [
+      ...new Set([
+        Number(plan.u_id),
+        ...planMembers.map((m) => Number(m.u_id)),
+      ]),
+    ],
+    plans: [],
+  };
 
   return (
     <>
       <header className="trip-head">
-        <img className="trip-head__photo" src={trip.photo} alt="" />
-        <h1>{trip.destination}, {trip.duration}<br /><em>여행일정</em>입니다.</h1>
-        <p>{trip.start_date} ~ {trip.end_date} · 함께하는 친구 {trip.members}명{!member && ` · ${trip.owner_name}님의 공개 여행계획`}</p>
-        <div className="trip-head__tags">
-          <span className={`badge ${isPublic === 'Y' ? 'badge--on' : ''}`}>{isPublic === 'Y' ? '공개' : '비공개'}</span>
-          <Tags tags={tags} />
-        </div>
-        {owner && (
-          <div className="trip-head__tools">
-            <button type="button" className="btn btn--small" onClick={() => setIsPublic(isPublic === 'Y' ? 'N' : 'Y')}>{isPublic === 'Y' ? '비공개로 전환' : '공개로 전환'}</button>
-            <button type="button" className="btn btn--small" onClick={() => setTagOpen(true)}>해시태그 편집</button>
+        <h1>{trip.title}</h1>
+        <p>
+          {trip.destination} · {trip.start_date} ~ {trip.end_date}
+        </p>
+        <p>함께하는 친구 {trip.members}명</p>
+
+        {ended ? (
+          <div className="trip-head__journal">
+            <Link
+              to={`/journals/new/from/${trip.p_id}`}
+              className="btn btn--primary"
+            >
+              여행기에 추가
+            </Link>
+            <small>
+              완료된 여행의 일정을 가져와 여행기를 작성해 보세요.
+            </small>
           </div>
-        )}
-        {member && (
-          ended
-            ? <div className="trip-head__journal"><Link to={`/journals/new/from/${trip.trip_id}`} className="btn btn--primary">여행기에 추가</Link><small>여행이 끝났어요. 이 여행의 일정을 가져와 여행기를 써보세요.</small></div>
-            : <p className="trip-head__hint">여행 기간이 끝나면 “여행기에 추가” 버튼이 나타나요.</p>
+        ) : (
+          <p className="trip-head__hint">
+            여행이 완료되면 여행기를 작성할 수 있습니다.
+          </p>
         )}
       </header>
+
       <TabNav tripId={tripId} isMember={member} />
-      <Outlet context={{ trip, canEdit: member, owner }} />
-      <Modal open={tagOpen} title="해시태그 편집" onClose={() => setTagOpen(false)} width={460}>
-        <TagPicker value={tags} onChange={setTags} />
-        <div className="form-actions" style={{ marginTop: 16 }}><button type="button" className="btn btn--primary" onClick={() => setTagOpen(false)}>완료</button></div>
-      </Modal>
+
+      <Outlet
+        context={{
+          trip,
+          plan,
+          planMembers,
+          canEdit: member,
+          owner,
+        }}
+      />
     </>
   );
 }
