@@ -70,9 +70,7 @@ class JournalValidator:
         j_id: int,
         user_id: int,
     ):
-        journal = await JournalValidator.check_journal_access(
-            db, j_id, user_id
-        )
+        journal = await JournalValidator.check_journal_exists(db, j_id)
 
         if journal.u_id != user_id:
             raise HTTPException(

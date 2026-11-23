@@ -1,5 +1,5 @@
 
-from sqlalchemy import and_, delete, or_, select
+from sqlalchemy import delete, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from backend.journals import journals, journals_item, journals_comment
@@ -86,32 +86,13 @@ class JournalCrud:
         return await db.get(journals, j_id)
 
     @staticmethod
-    def access_condition(user_id: int):
-        return or_(
-            and_(
-                journals.p_id.is_(None),
-                journals.u_id == user_id,
-            ),
-            journals.p_id.in_(
-                select(Plans.p_id).where(Plans.u_id == user_id)
-            ),
-            journals.p_id.in_(
-                select(PlanMembers.p_id).where(
-                    PlanMembers.u_id == user_id
-                )
-            ),
-        )
-
-    @staticmethod
     async def get_list(
         db: AsyncSession,
-        user_id: int,
         skip: int = 0,
         limit: int = 100,
     ):
         result = await db.execute(
             select(journals)
-            .where(JournalCrud.access_condition(user_id))
             .order_by(journals.j_id.desc())
             .offset(skip)
             .limit(limit)
@@ -122,10 +103,7 @@ class JournalCrud:
     async def get_by_user(db: AsyncSession, u_id: int):
         result = await db.execute(
             select(journals)
-            .where(
-                journals.u_id == u_id,
-                JournalCrud.access_condition(u_id),
-            )
+            .where(journals.u_id == u_id)
             .order_by(journals.j_id.desc())
         )
         return result.scalars().all()
