@@ -22,13 +22,16 @@ from backend.plans.service import (
     PlanDetailService,
     BudgetService,
     ExpenseService,
+    PlanAccessService,
 )
 
 from backend.login.models import User
+
 from backend.login.security import get_current_user
 
 
 router = APIRouter(prefix="/plans", tags=["여행 계획"])
+
 
 
 # ==================================================
@@ -39,7 +42,11 @@ router = APIRouter(prefix="/plans", tags=["여행 계획"])
 async def create_plan(
     plan: PlanCreate,
     db: AsyncSession = Depends(get_db),
+    user: User = Depends(get_current_user),
 ):
+    if plan.u_id != user.u_id:
+        raise HTTPException(403, "본인 명의로만 여행계획을 생성할 수 있습니다.")
+
     return await PlanService.create_plan(db=db, plan=plan)
 
 
@@ -47,19 +54,25 @@ async def create_plan(
 async def get_plans_by_user(
     user_id: int,
     db: AsyncSession = Depends(get_db),
+    user: User = Depends(get_current_user),
 ):
-    return await PlanService.get_plans_by_user(db=db, user_id=user_id)
+    if user_id != user.u_id:
+        raise HTTPException(403, "본인의 여행계획만 조회할 수 있습니다.")
+
+    return await PlanService.get_plans_by_user(
+        db=db, user_id=user.u_id
+    )
 
 
 @router.get("/{plan_id}", response_model=PlanInDB)
 async def get_plan_by_id(
     plan_id: int,
     db: AsyncSession = Depends(get_db),
+    user: User = Depends(get_current_user),
 ):
-    plan = await PlanService.get_plan_by_id(db=db, plan_id=plan_id)
-    if plan is None:
-        raise HTTPException(404, "여행계획이 없습니다.")
-    return plan
+    return await PlanAccessService.require_member(
+        db=db, plan_id=plan_id, user_id=user.u_id
+    )
 
 
 @router.put("/{plan_id}", response_model=PlanInDB)
@@ -67,23 +80,37 @@ async def update_plan_by_id(
     plan_id: int,
     plan: PlanUpdate,
     db: AsyncSession = Depends(get_db),
+    user: User = Depends(get_current_user),
 ):
-    updated = await PlanService.update_plan(
+    await PlanAccessService.require_owner(
+        db=db, plan_id=plan_id, user_id=user.u_id
+    )
+
+    # 여행 완료 상태는 스케줄러에서 관리
+    if "p_status" in plan.model_fields_set:
+        raise HTTPException(
+            422,
+            "여행 완료 상태는 직접 변경할 수 없습니다."
+        )
+
+    return await PlanService.update_plan(
         db=db, plan_id=plan_id, plan=plan
     )
-    if updated is None:
-        raise HTTPException(404, "여행계획이 없습니다.")
-    return updated
 
 
 @router.delete("/{plan_id}", status_code=204)
 async def delete_plan_by_id(
     plan_id: int,
     db: AsyncSession = Depends(get_db),
+    user: User = Depends(get_current_user),
 ):
-    deleted = await PlanService.delete_plan(db=db, plan_id=plan_id)
-    if deleted is None:
-        raise HTTPException(404, "여행계획이 없습니다.")
+    await PlanAccessService.require_owner(
+        db=db, plan_id=plan_id, user_id=user.u_id
+    )
+
+    await PlanService.delete_plan(db=db, plan_id=plan_id)
+
+
 
 
 # ==================================================
@@ -111,11 +138,11 @@ async def create_invite(
 async def verify_invite(
     data: InviteVerify,
     db: AsyncSession = Depends(get_db),
+    user: User = Depends(get_current_user),
 ):
     return await InviteService.verify_invite(
         db=db, code=data.i_code
     )
-
 
 
 @router.post(
@@ -133,7 +160,6 @@ async def join_plan_by_invite(
         code=data.i_code,
         user_id=user.u_id,
     )
-    
 
 
 @router.get(
@@ -160,45 +186,51 @@ async def get_invite_by_id(
     plan_id: int,
     invite_id: int,
     db: AsyncSession = Depends(get_db),
+    user: User = Depends(get_current_user),
 ):
+    await PlanAccessService.require_owner(
+        db=db, plan_id=plan_id, user_id=user.u_id
+    )
+
     invite = await InviteService.get_invite_by_id(
         db=db, invite_id=invite_id
     )
+
     if invite is None or invite.p_id != plan_id:
         raise HTTPException(404, "초대 코드가 없습니다.")
+
     return invite
 
 
-@router.delete("/{plan_id}/invites/{invite_id}", status_code=204)
+@router.delete(
+    "/{plan_id}/invites/{invite_id}",
+    status_code=204,
+)
 async def delete_invite(
     plan_id: int,
     invite_id: int,
     db: AsyncSession = Depends(get_db),
+    user: User = Depends(get_current_user),
 ):
-    invite = await InviteService.get_invite_by_id(db, invite_id)
+    await PlanAccessService.require_owner(
+        db=db, plan_id=plan_id, user_id=user.u_id
+    )
+
+    invite = await InviteService.get_invite_by_id(
+        db=db, invite_id=invite_id
+    )
+
     if invite is None or invite.p_id != plan_id:
         raise HTTPException(404, "초대 코드가 없습니다.")
+
     await InviteService.delete_invite(db, invite_id)
+
+
 
 
 # ==================================================
 # 3. 여행 멤버
 # ==================================================
-
-@router.post(
-    "/{plan_id}/members",
-    response_model=PlanMemberInDB,
-    status_code=201,
-)
-async def create_member(
-    plan_id: int,
-    member: PlanMemberCreate,
-    db: AsyncSession = Depends(get_db),
-):
-    if member.p_id != plan_id:
-        raise HTTPException(422, "여행계획 ID가 일치하지 않습니다.")
-    return await PlanMemberService.create_member(db, member)
-
 
 @router.get(
     "/{plan_id}/members",
@@ -224,10 +256,19 @@ async def get_member_by_id(
     plan_id: int,
     member_id: int,
     db: AsyncSession = Depends(get_db),
+    user: User = Depends(get_current_user),
 ):
-    member = await PlanMemberService.get_member_by_id(db, member_id)
+    await PlanAccessService.require_member(
+        db=db, plan_id=plan_id, user_id=user.u_id
+    )
+
+    member = await PlanMemberService.get_member_by_id(
+        db, member_id
+    )
+
     if member is None or member.p_id != plan_id:
         raise HTTPException(404, "여행 멤버가 없습니다.")
+
     return member
 
 
@@ -240,25 +281,60 @@ async def update_member(
     member_id: int,
     member: PlanMemberUpdate,
     db: AsyncSession = Depends(get_db),
+    user: User = Depends(get_current_user),
 ):
-    existing = await PlanMemberService.get_member_by_id(db, member_id)
+    await PlanAccessService.require_owner(
+        db=db, plan_id=plan_id, user_id=user.u_id
+    )
+
+    existing = await PlanMemberService.get_member_by_id(
+        db, member_id
+    )
+
     if existing is None or existing.p_id != plan_id:
         raise HTTPException(404, "여행 멤버가 없습니다.")
 
-    return await PlanMemberService.update_member(db, member_id, member)
+    # 방장 역할은 plans.u_id로 관리
+    if member.role != "member":
+        raise HTTPException(
+            422,
+            "멤버 역할은 member만 허용됩니다."
+        )
+
+    return await PlanMemberService.update_member(
+        db, member_id, member
+    )
 
 
-@router.delete("/{plan_id}/members/{member_id}", status_code=204)
+@router.delete(
+    "/{plan_id}/members/{member_id}",
+    status_code=204,
+)
 async def delete_member(
     plan_id: int,
     member_id: int,
     db: AsyncSession = Depends(get_db),
+    user: User = Depends(get_current_user),
 ):
-    existing = await PlanMemberService.get_member_by_id(db, member_id)
+    await PlanAccessService.require_owner(
+        db=db, plan_id=plan_id, user_id=user.u_id
+    )
+
+    existing = await PlanMemberService.get_member_by_id(
+        db, member_id
+    )
+
     if existing is None or existing.p_id != plan_id:
         raise HTTPException(404, "여행 멤버가 없습니다.")
 
+    if existing.u_id == user.u_id:
+        raise HTTPException(
+            403,
+            "방장은 멤버 내보내기로 삭제할 수 없습니다."
+        )
+
     await PlanMemberService.delete_member(db, member_id)
+
 
 
 # ==================================================

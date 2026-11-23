@@ -73,6 +73,51 @@ class PlanValidator:
             raise HTTPException(404, "지출 내역이 없습니다.")
         return expense
 
+    
+class PlanAccessService:
+
+    @staticmethod
+    async def require_member(
+        db: AsyncSession,
+        plan_id: int,
+        user_id: int,
+    ):
+        plan = await PlanValidator.check_plan(db, plan_id)
+
+        if plan.u_id == user_id:
+            return plan
+
+        member = await PlanMemberCrud.get_by_plan_and_user(
+            db, plan_id, user_id
+        )
+
+        if member is None:
+            raise HTTPException(
+                403,
+                "해당 여행계획의 작성자 또는 초대된 멤버만 조회할 수 있습니다."
+            )
+
+        return plan
+
+    @staticmethod
+    async def require_owner(
+        db: AsyncSession,
+        plan_id: int,
+        user_id: int,
+    ):
+        plan = await PlanValidator.check_plan(db, plan_id)
+
+        if plan.u_id != user_id:
+            raise HTTPException(
+                403,
+                "여행계획 작성자만 수행할 수 있습니다."
+            )
+
+        return plan
+
+
+
+
 
 class PlanTransaction:
 
