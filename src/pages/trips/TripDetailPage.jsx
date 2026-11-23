@@ -4,7 +4,7 @@
 //  - 방장은 공개 여부(Y/N)와 해시태그를 바꿀 수 있습니다.
 //  - 여행 기간(end_date)이 지나면 "여행기에 추가" 버튼이 나타나고, 누르면 이 여행의 일정이 여행기 작성 화면으로 넘어갑니다.
 // TODO: GET /trips/{id}, PUT /trips/{id}(공개 여부), 해시태그 API, POST /trips/{id}/to-journal 연결
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Link, Outlet, useParams } from 'react-router-dom';
 import TabNav from '../../components/common/TabNav.jsx';
 import Tags from '../../components/common/Tags.jsx';
@@ -13,7 +13,7 @@ import Modal from '../../components/common/Modal.jsx';
 import EmptyState from '../../components/common/EmptyState.jsx';
 import { useAuth } from '../../context/AuthContext.jsx';
 import { sampleTrips, isMember, canSee, isEnded } from '../../data/sampleTrips.js';
-
+import { request } from '../../api/client.js';
 
 export default function TripDetailPage() {
   const { tripId } = useParams();
@@ -60,12 +60,32 @@ export default function TripDetailPage() {
   };
 }, [tripId]);
 
+
+  if (loading) {
+    return <p>여행 정보를 불러오는 중입니다.</p>;
+  }
+
+  if (error || !plan) {
+    return <p>{error || '여행 정보를 찾을 수 없습니다.'}</p>;
+  }
+
+
+
   if (!found || !canSee({ ...found, is_public: isPublic }, user)) {
     return <EmptyState icon="🔒" title="볼 수 없는 여행이에요" description="없는 여행이거나 비공개 여행이에요."><Link to="/trips" className="btn btn--primary">여행계획 목록으로</Link></EmptyState>;
   }
-  const trip = { ...found, is_public: isPublic, hashtags: tags };
-  const member = isMember(trip, user);
-  const owner = trip.owner_id === user.user_id;
+  const trip = {
+  ...found,
+  p_id: plan.p_id,
+  is_public: isPublic,
+  hashtags: tags,
+};
+  const owner = Number(plan.u_id) === Number(user.user_id);
+
+  const member = owner || planMembers.some(
+    (m) => Number(m.u_id) === Number(user.user_id)
+  );
+
   const ended = isEnded(trip);
 
   return (
