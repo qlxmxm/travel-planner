@@ -4,6 +4,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from backend.journals.comments.crud import JournalCommentCrud
 from backend.journals.comments.schemas import JournalCommentCreate, JournalCommentUpdate
 from backend.journals.validation import JournalValidator
+from backend.db.transaction import rollback_on_error
 
 
 class JournalCommentService:
@@ -26,14 +27,10 @@ class JournalCommentService:
             jc_content=content,
         )
 
-        try:
+        async with rollback_on_error(db):
             comment = await JournalCommentCrud.create(db, comment_data)
             await db.commit()
             await db.refresh(comment)
-
-        except Exception:
-            await db.rollback()
-            raise
 
         return comment
 
@@ -54,14 +51,10 @@ class JournalCommentService:
         if not data.jc_content.strip():
             raise HTTPException(422, "댓글 내용을 입력해야 합니다.")
 
-        try:
+        async with rollback_on_error(db):
             comment = await JournalCommentCrud.update(db, jc_id, data)
             await db.commit()
             await db.refresh(comment)
-
-        except Exception:
-            await db.rollback()
-            raise
 
         return comment
 
@@ -73,12 +66,8 @@ class JournalCommentService:
     ):
         await JournalValidator.check_comment_author(db, jc_id, user_id)
 
-        try:
+        async with rollback_on_error(db):
             await JournalCommentCrud.delete(db, jc_id)
             await db.commit()
-
-        except Exception:
-            await db.rollback()
-            raise
 
         return {"message": "댓글이 삭제되었습니다."}

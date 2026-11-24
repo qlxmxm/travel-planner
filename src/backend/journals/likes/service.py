@@ -2,6 +2,7 @@
 from sqlalchemy.ext.asyncio import AsyncSession
 from backend.journals.likes.crud import JournalLikeCrud
 from backend.journals.validation import JournalValidator
+from backend.db.transaction import rollback_on_error
 
 
 class JournalLikeService:
@@ -22,12 +23,9 @@ class JournalLikeService:
 
         # 이미 눌렀으면 그대로 성공 처리 (중복 클릭/새로고침에도 안전)
         if await JournalLikeCrud.get(db, j_id, user_id) is None:
-            try:
+            async with rollback_on_error(db):
                 await JournalLikeCrud.create(db, j_id, user_id)
                 await db.commit()
-            except Exception:
-                await db.rollback()
-                raise
 
         return {"message": "좋아요를 눌렀습니다."}
 
@@ -35,11 +33,8 @@ class JournalLikeService:
     async def remove_like(db: AsyncSession, j_id: int, user_id: int):
         await JournalValidator.check_journal_exists(db, j_id)
 
-        try:
+        async with rollback_on_error(db):
             await JournalLikeCrud.delete(db, j_id, user_id)
             await db.commit()
-        except Exception:
-            await db.rollback()
-            raise
 
         return {"message": "좋아요를 취소했습니다."}

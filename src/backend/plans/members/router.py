@@ -9,6 +9,7 @@ from backend.plans.access import (
     MEMBER_ROLE,
     PlanAccessService,
     PlanValidator,
+    require_child,
 )
 from backend.plans.members.schemas import (
     PlanMemberDetail,
@@ -54,8 +55,7 @@ async def get_member_by_id(
         db, member_id
     )
 
-    if member is None or member.p_id != plan_id:
-        raise HTTPException(404, "여행 멤버가 없습니다.")
+    require_child(member, "p_id", plan_id, "여행 멤버가 없습니다.")
 
     return member
 
@@ -79,8 +79,7 @@ async def update_member(
         db, member_id
     )
 
-    if existing is None or existing.p_id != plan_id:
-        raise HTTPException(404, "여행 멤버가 없습니다.")
+    require_child(existing, "p_id", plan_id, "여행 멤버가 없습니다.")
 
     plan = await PlanValidator.check_plan(db, plan_id)
     if existing.u_id == plan.u_id:
@@ -116,8 +115,7 @@ async def delete_member(
         db, member_id
     )
 
-    if existing is None or existing.p_id != plan_id:
-        raise HTTPException(404, "여행 멤버가 없습니다.")
+    require_child(existing, "p_id", plan_id, "여행 멤버가 없습니다.")
 
     plan = await PlanValidator.check_plan(db, plan_id)
     if existing.u_id == plan.u_id:

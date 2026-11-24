@@ -5,6 +5,7 @@ from backend.plans.access import PlanValidator
 from backend.plans.schedules.crud import PlanDetailCrud
 from backend.plans.schedules.schemas import PlanDetailCreate, PlanDetailUpdate
 from backend.plans.transaction import PlanTransaction
+from backend.db.transaction import rollback_on_error
 
 
 class PlanDetailService:
@@ -18,7 +19,7 @@ class PlanDetailService:
                 422, "일정 시간은 여행 시작일과 종료일 사이여야 합니다."
             )
 
-        try:
+        async with rollback_on_error(db):
             detail = await PlanDetailCrud.create(
                 db=db,
                 plan_id=data.p_id,
@@ -28,9 +29,6 @@ class PlanDetailService:
                 memo=data.memo,
             )
             return await PlanTransaction.save(db, detail)
-        except Exception:
-            await db.rollback()
-            raise
 
     @staticmethod
     async def get_detail_by_id(db: AsyncSession, detail_id: int):
@@ -66,24 +64,18 @@ class PlanDetailService:
                 422, "일정 시간은 여행 시작일과 종료일 사이여야 합니다."
             )
 
-        try:
+        async with rollback_on_error(db):
             updated = await PlanDetailCrud.update_by_id(
                 db, detail_id, update_data
             )
             return await PlanTransaction.save(db, updated)
-        except Exception:
-            await db.rollback()
-            raise
 
     @staticmethod
     async def delete_detail(db: AsyncSession, detail_id: int):
-        try:
+        async with rollback_on_error(db):
             deleted = await PlanDetailCrud.delete_by_id(db, detail_id)
             if deleted is None:
                 return None
 
             await PlanTransaction.save(db)
             return True
-        except Exception:
-            await db.rollback()
-            raise

@@ -5,6 +5,7 @@ from backend.plans.access import PlanAccessService, PlanValidator
 from backend.plans.members.crud import PlanMemberCrud
 from backend.plans.members.schemas import PlanMemberCreate, PlanMemberUpdate
 from backend.plans.transaction import PlanTransaction
+from backend.db.transaction import rollback_on_error
 
 
 class PlanMemberService:
@@ -19,14 +20,11 @@ class PlanMemberService:
         if existing is not None:
             raise HTTPException(409, "이미 등록된 여행 멤버입니다.")
 
-        try:
+        async with rollback_on_error(db):
             member = await PlanMemberCrud.create(
                 db, data.p_id, data.u_id, data.role
             )
             return await PlanTransaction.save(db, member)
-        except Exception:
-            await db.rollback()
-            raise
 
     @staticmethod
     async def get_member_by_id(db: AsyncSession, member_id: int):
@@ -57,24 +55,18 @@ class PlanMemberService:
     ):
         await PlanValidator.check_member(db, member_id)
 
-        try:
+        async with rollback_on_error(db):
             member = await PlanMemberCrud.update_role(
                 db, member_id, data.role
             )
             return await PlanTransaction.save(db, member)
-        except Exception:
-            await db.rollback()
-            raise
 
     @staticmethod
     async def delete_member(db: AsyncSession, member_id: int):
-        try:
+        async with rollback_on_error(db):
             deleted = await PlanMemberCrud.delete_by_id(db, member_id)
             if deleted is None:
                 return None
 
             await PlanTransaction.save(db)
             return True
-        except Exception:
-            await db.rollback()
-            raise

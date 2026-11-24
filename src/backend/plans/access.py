@@ -6,6 +6,14 @@ from backend.plans.members.crud import PlanMemberCrud
 from backend.plans.trips.crud import PlanCrud
 
 
+def require_child(obj, parent_field: str, parent_id: int, message: str):
+    """주소의 부모(예: 여행 번호)에 속한 항목이 맞는지 확인. 없거나 다른 부모의 것이면 404.
+    예) require_child(budget, "p_id", plan_id, "예산이 없습니다.")"""
+    if obj is None or getattr(obj, parent_field) != parent_id:
+        raise HTTPException(404, message)
+    return obj
+
+
 class PlanValidator:
 
     @staticmethod
@@ -72,14 +80,12 @@ class PlanAccessService:
         db: AsyncSession,
         plan_id: int,
         user_id: int,
+        message: str = "여행계획 작성자만 수행할 수 있습니다.",
     ):
         plan = await PlanValidator.check_plan(db, plan_id)
 
         if plan.u_id != user_id:
-            raise HTTPException(
-                403,
-                "여행계획 작성자만 수행할 수 있습니다."
-            )
+            raise HTTPException(403, message)
 
         return plan
 

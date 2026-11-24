@@ -17,6 +17,7 @@ from backend.journals.journal.schemas import (
 )
 from backend.journals.responses import JournalResponseService
 from backend.journals.validation import JournalValidator
+from backend.db.transaction import rollback_on_error
 
 
 class JournalService:
@@ -127,7 +128,7 @@ class JournalService:
             **data.model_dump(exclude_unset=True, exclude={"items"})
         )
 
-        try:
+        async with rollback_on_error(db):
             await JournalCrud.update(db, j_id, journal_update)
 
             if data.items is not None:
@@ -142,10 +143,6 @@ class JournalService:
 
             await db.commit()
 
-        except Exception:
-            await db.rollback()
-            raise
-
         return await JournalService.get_journal_detail(db, j_id)
 
     @staticmethod
@@ -156,15 +153,11 @@ class JournalService:
     ):
         await JournalValidator.check_journal_author(db, j_id, user_id)
 
-        try:
+        async with rollback_on_error(db):
             await JournalCommentCrud.delete_by_journal(db, j_id)
             await JournalItemCrud.delete_by_journal(db, j_id)
             await JournalCrud.delete(db, j_id)
             await db.commit()
-
-        except Exception:
-            await db.rollback()
-            raise
 
         return {"message": "여행기가 삭제되었습니다."}
 
@@ -186,13 +179,9 @@ class JournalItemService:
         await JournalValidator.check_journal_author(db, item.j_id, user_id)
         JournalValidator.check_item_update(data)
 
-        try:
+        async with rollback_on_error(db):
             updated_item = await JournalItemCrud.update(db, ji_id, data)
             await db.commit()
             await db.refresh(updated_item)
-
-        except Exception:
-            await db.rollback()
-            raise
 
         return JournalResponseService.format_item(updated_item)

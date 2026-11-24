@@ -5,11 +5,12 @@ from fastapi import HTTPException
 from sqlalchemy import select
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
-from backend.plans.access import MEMBER_ROLE, PlanValidator
+from backend.plans.access import MEMBER_ROLE, PlanAccessService, PlanValidator
 from backend.plans.invites.crud import InviteCrud
 from backend.plans.members.crud import PlanMemberCrud
 from backend.plans.models import Invite
 from backend.plans.transaction import PlanTransaction
+from backend.db.transaction import rollback_on_error
 
 
 def _utc_now() -> datetime:
@@ -47,10 +48,7 @@ class InviteService:
         plan_id: int,
         user_id: int,
     ):
-        plan = await PlanValidator.check_plan(db, plan_id)
-
-        if plan.u_id != user_id:
-            raise HTTPException(403, "방장만 초대 코드를 발급할 수 있습니다.")
+        await PlanAccessService.require_owner(db, plan_id, user_id, "방장만 초대 코드를 발급할 수 있습니다.")
 
         now = _utc_now()
         expires_at = now + timedelta(days=7)
@@ -86,10 +84,7 @@ class InviteService:
         plan_id: int,
         user_id: int,
     ):
-        plan = await PlanValidator.check_plan(db, plan_id)
-
-        if plan.u_id != user_id:
-            raise HTTPException(403, "방장만 초대 코드를 조회할 수 있습니다.")
+        await PlanAccessService.require_owner(db, plan_id, user_id, "방장만 초대 코드를 조회할 수 있습니다.")
 
         return await InviteCrud.get_by_plan_id(db, plan_id)
 
@@ -111,7 +106,7 @@ class InviteService:
         if not role.strip():
             raise HTTPException(422, "멤버 역할을 입력해야 합니다.")
 
-        try:
+        async with rollback_on_error(db):
             result = await db.execute(
                 select(Invite)
                 .where(Invite.i_code == code)
@@ -130,19 +125,12 @@ class InviteService:
             await InviteCrud.mark_used(db, invite.i_id)
             return await PlanTransaction.save(db, member)
 
-        except Exception:
-            await db.rollback()
-            raise
-
     @staticmethod
     async def delete_invite(db: AsyncSession, invite_id: int):
-        try:
+        async with rollback_on_error(db):
             deleted = await InviteCrud.delete_by_id(db, invite_id)
             if deleted is None:
                 return None
 
             await PlanTransaction.save(db)
             return True
-        except Exception:
-            await db.rollback()
-            raise

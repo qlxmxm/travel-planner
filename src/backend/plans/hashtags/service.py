@@ -5,6 +5,7 @@ from backend.plans.access import PlanValidator
 from backend.plans.hashtags.crud import HashtagCrud, PlanHashtagCrud
 from backend.plans.hashtags.schemas import HashtagCreate, PlanHashtagCreate
 from backend.plans.transaction import PlanTransaction
+from backend.db.transaction import rollback_on_error
 
 
 class HashtagService:
@@ -15,12 +16,9 @@ class HashtagService:
         if existing is not None:
             return existing
 
-        try:
+        async with rollback_on_error(db):
             tag = await HashtagCrud.create(db, data.h_name)
             return await PlanTransaction.save(db, tag)
-        except Exception:
-            await db.rollback()
-            raise
 
     @staticmethod
     async def get_hashtag_by_id(db: AsyncSession, hashtag_id: int):
@@ -36,13 +34,10 @@ class HashtagService:
         if tag is None:
             return None
 
-        try:
+        async with rollback_on_error(db):
             deleted = await HashtagCrud.delete_by_id(db, hashtag_id)
             await PlanTransaction.save(db)
             return deleted is not None
-        except Exception:
-            await db.rollback()
-            raise
 
 
 class PlanHashtagService:
@@ -61,14 +56,11 @@ class PlanHashtagService:
         if existing is not None:
             raise HTTPException(409, "이미 연결된 해시태그입니다.")
 
-        try:
+        async with rollback_on_error(db):
             link = await PlanHashtagCrud.create(
                 db, data.p_id, data.h_id
             )
             return await PlanTransaction.save(db, link)
-        except Exception:
-            await db.rollback()
-            raise
 
     @staticmethod
     async def get_hashtags_by_plan(db: AsyncSession, plan_id: int):
@@ -81,7 +73,7 @@ class PlanHashtagService:
         plan_id: int,
         hashtag_id: int,
     ):
-        try:
+        async with rollback_on_error(db):
             deleted = await PlanHashtagCrud.delete_link(
                 db, plan_id, hashtag_id
             )
@@ -90,6 +82,3 @@ class PlanHashtagService:
 
             await PlanTransaction.save(db)
             return True
-        except Exception:
-            await db.rollback()
-            raise

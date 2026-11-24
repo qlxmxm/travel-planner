@@ -10,6 +10,7 @@ from backend.plans.budgets.schemas import (
     ExpenseUpdate,
 )
 from backend.plans.transaction import PlanTransaction
+from backend.db.transaction import rollback_on_error
 
 
 class BudgetService:
@@ -18,12 +19,9 @@ class BudgetService:
     async def create_budget(db: AsyncSession, budget: BudgetCreate):
         await PlanValidator.check_plan(db, budget.p_id)
 
-        try:
+        async with rollback_on_error(db):
             db_budget = await BudgetCrud.create(db, budget)
             return await PlanTransaction.save(db, db_budget)
-        except Exception:
-            await db.rollback()
-            raise
 
     @staticmethod
     async def get_budget_by_id(db: AsyncSession, budget_id: int):
@@ -51,27 +49,21 @@ class BudgetService:
         if "p_id" in update_data:
             await PlanValidator.check_plan(db, budget.p_id)
 
-        try:
+        async with rollback_on_error(db):
             updated = await BudgetCrud.update_by_id(
                 db, budget_id, budget
             )
             return await PlanTransaction.save(db, updated)
-        except Exception:
-            await db.rollback()
-            raise
 
     @staticmethod
     async def delete_budget(db: AsyncSession, budget_id: int):
-        try:
+        async with rollback_on_error(db):
             deleted = await BudgetCrud.delete_by_id(db, budget_id)
             if deleted is None:
                 return None
 
             await PlanTransaction.save(db)
             return True
-        except Exception:
-            await db.rollback()
-            raise
 
 
 class ExpenseService:
@@ -80,7 +72,7 @@ class ExpenseService:
     async def create_expense(db: AsyncSession, data: ExpenseCreate):
         await PlanValidator.check_budget(db, data.b_id)
 
-        try:
+        async with rollback_on_error(db):
             expense = await ExpenseCrud.create(
                 db=db,
                 budget_id=data.b_id,
@@ -88,9 +80,6 @@ class ExpenseService:
                 amount=data.e_amount,
             )
             return await PlanTransaction.save(db, expense)
-        except Exception:
-            await db.rollback()
-            raise
 
     @staticmethod
     async def get_expense_by_id(db: AsyncSession, expense_id: int):
@@ -115,7 +104,7 @@ class ExpenseService:
             if field in update_data and update_data[field] is None:
                 raise HTTPException(422, f"{field}은 비울 수 없습니다.")
 
-        try:
+        async with rollback_on_error(db):
             updated = await ExpenseCrud.update_by_id(
                 db=db,
                 expense_id=expense_id,
@@ -123,19 +112,13 @@ class ExpenseService:
                 amount=update_data.get("e_amount"),
             )
             return await PlanTransaction.save(db, updated)
-        except Exception:
-            await db.rollback()
-            raise
 
     @staticmethod
     async def delete_expense(db: AsyncSession, expense_id: int):
-        try:
+        async with rollback_on_error(db):
             deleted = await ExpenseCrud.delete_by_id(db, expense_id)
             if deleted is None:
                 return None
 
             await PlanTransaction.save(db)
             return True
-        except Exception:
-            await db.rollback()
-            raise

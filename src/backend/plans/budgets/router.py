@@ -12,6 +12,7 @@ from backend.plans.budgets.schemas import (
 )
 from backend.plans.budgets.service import BudgetService, ExpenseService
 from backend.plans.dependencies import require_editor_dep, require_member_dep
+from backend.plans.access import require_child
 
 router = APIRouter()
 
@@ -53,8 +54,7 @@ async def get_budget_by_id(
     db: AsyncSession = Depends(get_db),
 ):
     budget = await BudgetService.get_budget_by_id(db, budget_id)
-    if budget is None or budget.p_id != plan_id:
-        raise HTTPException(404, "예산이 없습니다.")
+    require_child(budget, "p_id", plan_id, "예산이 없습니다.")
     return budget
 
 
@@ -69,8 +69,7 @@ async def update_budget(
     db: AsyncSession = Depends(get_db),
 ):
     existing = await BudgetService.get_budget_by_id(db, budget_id)
-    if existing is None or existing.p_id != plan_id:
-        raise HTTPException(404, "예산이 없습니다.")
+    require_child(existing, "p_id", plan_id, "예산이 없습니다.")
 
     if budget.p_id is not None and budget.p_id != plan_id:
         raise HTTPException(422, "예산의 여행계획 ID를 변경할 수 없습니다.")
@@ -89,8 +88,7 @@ async def delete_budget(
     db: AsyncSession = Depends(get_db),
 ):
     existing = await BudgetService.get_budget_by_id(db, budget_id)
-    if existing is None or existing.p_id != plan_id:
-        raise HTTPException(404, "예산이 없습니다.")
+    require_child(existing, "p_id", plan_id, "예산이 없습니다.")
 
     await BudgetService.delete_budget(db, budget_id)
 
@@ -107,8 +105,7 @@ async def create_expense(
     db: AsyncSession = Depends(get_db),
 ):
     budget = await BudgetService.get_budget_by_id(db, budget_id)
-    if budget is None or budget.p_id != plan_id:
-        raise HTTPException(404, "예산이 없습니다.")
+    require_child(budget, "p_id", plan_id, "예산이 없습니다.")
 
     if data.b_id != budget_id:
         raise HTTPException(422, "예산 ID가 일치하지 않습니다.")
@@ -126,8 +123,7 @@ async def get_expenses_by_budget(
     db: AsyncSession = Depends(get_db),
 ):
     budget = await BudgetService.get_budget_by_id(db, budget_id)
-    if budget is None or budget.p_id != plan_id:
-        raise HTTPException(404, "예산이 없습니다.")
+    require_child(budget, "p_id", plan_id, "예산이 없습니다.")
 
     return await ExpenseService.get_expenses_by_budget(db, budget_id)
 
@@ -143,12 +139,10 @@ async def get_expense_by_id(
     db: AsyncSession = Depends(get_db),
 ):
     budget = await BudgetService.get_budget_by_id(db, budget_id)
-    if budget is None or budget.p_id != plan_id:
-        raise HTTPException(404, "예산이 없습니다.")
+    require_child(budget, "p_id", plan_id, "예산이 없습니다.")
 
     expense = await ExpenseService.get_expense_by_id(db, expense_id)
-    if expense is None or expense.b_id != budget_id:
-        raise HTTPException(404, "지출 내역이 없습니다.")
+    require_child(expense, "b_id", budget_id, "지출 내역이 없습니다.")
 
     return expense
 
@@ -165,12 +159,10 @@ async def update_expense(
     db: AsyncSession = Depends(get_db),
 ):
     budget = await BudgetService.get_budget_by_id(db, budget_id)
-    if budget is None or budget.p_id != plan_id:
-        raise HTTPException(404, "예산이 없습니다.")
+    require_child(budget, "p_id", plan_id, "예산이 없습니다.")
 
     expense = await ExpenseService.get_expense_by_id(db, expense_id)
-    if expense is None or expense.b_id != budget_id:
-        raise HTTPException(404, "지출 내역이 없습니다.")
+    require_child(expense, "b_id", budget_id, "지출 내역이 없습니다.")
 
     return await ExpenseService.update_expense(db, expense_id, data)
 
@@ -186,11 +178,9 @@ async def delete_expense(
     db: AsyncSession = Depends(get_db),
 ):
     budget = await BudgetService.get_budget_by_id(db, budget_id)
-    if budget is None or budget.p_id != plan_id:
-        raise HTTPException(404, "예산이 없습니다.")
+    require_child(budget, "p_id", plan_id, "예산이 없습니다.")
 
     expense = await ExpenseService.get_expense_by_id(db, expense_id)
-    if expense is None or expense.b_id != budget_id:
-        raise HTTPException(404, "지출 내역이 없습니다.")
+    require_child(expense, "b_id", budget_id, "지출 내역이 없습니다.")
 
     await ExpenseService.delete_expense(db, expense_id)

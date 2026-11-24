@@ -8,6 +8,7 @@ from backend.journals.journal.schemas import JournalCreate, JournalItemCreate
 from backend.journals.journal.service import JournalService
 from backend.journals.responses import JournalResponseService
 from backend.journals.validation import JournalValidator
+from backend.db.transaction import rollback_on_error
 
 
 class JournalPlanService:
@@ -135,7 +136,7 @@ class JournalPlanService:
             loc=plan.loc,
         )
 
-        try:
+        async with rollback_on_error(db):
             journal = await JournalCrud.create(db, journal_data)
             journal_items = JournalPlanService._build_journal_items(
                 journal.j_id, plan, original_items, submitted_items
@@ -144,9 +145,5 @@ class JournalPlanService:
 
             journal_id = journal.j_id
             await db.commit()
-
-        except Exception:
-            await db.rollback()
-            raise
 
         return await JournalService.get_journal_detail(db, journal_id)

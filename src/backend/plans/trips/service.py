@@ -4,18 +4,16 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from backend.plans.transaction import PlanTransaction
 from backend.plans.trips.crud import PlanCrud
 from backend.plans.trips.schemas import PlanCreate, PlanUpdate
+from backend.db.transaction import rollback_on_error
 
 
 class PlanService:
 
     @staticmethod
     async def create_plan(db: AsyncSession, plan: PlanCreate):
-        try:
+        async with rollback_on_error(db):
             db_plan = await PlanCrud.create(db, plan)
             return await PlanTransaction.save(db, db_plan)
-        except Exception:
-            await db.rollback()
-            raise
 
     @staticmethod
     async def get_accessible_plans(db: AsyncSession, user_id: int):
@@ -69,22 +67,16 @@ class PlanService:
 
         PlanService._validate_update(plan, db_plan)
 
-        try:
+        async with rollback_on_error(db):
             updated = await PlanCrud.update_by_id(db, plan_id, plan)
             return await PlanTransaction.save(db, updated)
-        except Exception:
-            await db.rollback()
-            raise
 
     @staticmethod
     async def delete_plan(db: AsyncSession, plan_id: int):
-        try:
+        async with rollback_on_error(db):
             deleted = await PlanCrud.delete_by_id(db, plan_id)
             if deleted is None:
                 return None
 
             await PlanTransaction.save(db)
             return True
-        except Exception:
-            await db.rollback()
-            raise

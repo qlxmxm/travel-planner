@@ -5,6 +5,7 @@ from backend.plans.access import MEMBER_ROLE, PlanAccessService, PlanValidator
 from backend.plans.join_requests.crud import JoinRequestCrud
 from backend.plans.members.crud import PlanMemberCrud
 from backend.plans.transaction import PlanTransaction
+from backend.db.transaction import rollback_on_error
 
 
 class JoinRequestService:
@@ -24,12 +25,9 @@ class JoinRequestService:
         if await JoinRequestCrud.get_by_plan_and_user(db, plan_id, user_id) is not None:
             raise HTTPException(409, "이미 참여를 요청했어요. 방장의 승인을 기다려 주세요.")
 
-        try:
+        async with rollback_on_error(db):
             req = await JoinRequestCrud.create(db, plan_id, user_id)
             return await PlanTransaction.save(db, req)
-        except Exception:
-            await db.rollback()
-            raise
 
     @staticmethod
     async def get_my_request(db: AsyncSession, plan_id: int, user_id: int):
@@ -55,15 +53,12 @@ class JoinRequestService:
     async def approve(db: AsyncSession, plan_id: int, jr_id: int):
         req = await JoinRequestService._get_request(db, plan_id, jr_id)
 
-        try:
+        async with rollback_on_error(db):
             if await PlanMemberCrud.get_by_plan_and_user(db, plan_id, req.u_id) is None:
                 await PlanMemberCrud.create(db, plan_id, req.u_id, MEMBER_ROLE)
             await JoinRequestCrud.delete(db, req)
             await PlanTransaction.save(db)
             return True
-        except Exception:
-            await db.rollback()
-            raise
 
     @staticmethod
     async def remove(db: AsyncSession, plan_id: int, jr_id: int, user_id: int):
@@ -74,10 +69,7 @@ class JoinRequestService:
         if req.u_id != user_id and plan.u_id != user_id:
             raise HTTPException(403, "방장 또는 요청한 본인만 처리할 수 있습니다.")
 
-        try:
+        async with rollback_on_error(db):
             await JoinRequestCrud.delete(db, req)
             await PlanTransaction.save(db)
             return True
-        except Exception:
-            await db.rollback()
-            raise

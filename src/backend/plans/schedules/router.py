@@ -9,6 +9,7 @@ from backend.plans.schedules.schemas import (
     PlanDetailUpdate,
 )
 from backend.plans.schedules.service import PlanDetailService
+from backend.plans.access import require_child
 
 router = APIRouter()
 
@@ -50,8 +51,7 @@ async def get_detail_by_id(
     db: AsyncSession = Depends(get_db),
 ):
     detail = await PlanDetailService.get_detail_by_id(db, detail_id)
-    if detail is None or detail.p_id != plan_id:
-        raise HTTPException(404, "여행 세부 일정이 없습니다.")
+    require_child(detail, "p_id", plan_id, "여행 세부 일정이 없습니다.")
     return detail
 
 
@@ -66,8 +66,7 @@ async def update_detail(
     db: AsyncSession = Depends(get_db),
 ):
     existing = await PlanDetailService.get_detail_by_id(db, detail_id)
-    if existing is None or existing.p_id != plan_id:
-        raise HTTPException(404, "여행 세부 일정이 없습니다.")
+    require_child(existing, "p_id", plan_id, "여행 세부 일정이 없습니다.")
 
     return await PlanDetailService.update_detail(db, detail_id, data)
 
@@ -81,7 +80,6 @@ async def delete_detail(
     db: AsyncSession = Depends(get_db),
 ):
     existing = await PlanDetailService.get_detail_by_id(db, detail_id)
-    if existing is None or existing.p_id != plan_id:
-        raise HTTPException(404, "여행 세부 일정이 없습니다.")
+    require_child(existing, "p_id", plan_id, "여행 세부 일정이 없습니다.")
 
     await PlanDetailService.delete_detail(db, detail_id)

@@ -1,10 +1,10 @@
 # [여행계획] 초대 코드 API
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends
 from sqlalchemy.ext.asyncio import AsyncSession
 from backend.db import get_db
 from backend.login.models import User
 from backend.login.security import get_current_user
-from backend.plans.access import PlanAccessService
+from backend.plans.access import PlanAccessService, require_child
 from backend.plans.invites.schemas import InviteInDB, InviteVerify
 from backend.plans.invites.service import InviteService
 from backend.plans.members.schemas import PlanMemberInDB
@@ -91,8 +91,7 @@ async def get_invite_by_id(
         db=db, invite_id=invite_id
     )
 
-    if invite is None or invite.p_id != plan_id:
-        raise HTTPException(404, "초대 코드가 없습니다.")
+    require_child(invite, "p_id", plan_id, "초대 코드가 없습니다.")
 
     return invite
 
@@ -115,7 +114,6 @@ async def delete_invite(
         db=db, invite_id=invite_id
     )
 
-    if invite is None or invite.p_id != plan_id:
-        raise HTTPException(404, "초대 코드가 없습니다.")
+    require_child(invite, "p_id", plan_id, "초대 코드가 없습니다.")
 
     await InviteService.delete_invite(db, invite_id)
