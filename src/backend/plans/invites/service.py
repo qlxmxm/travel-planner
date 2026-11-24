@@ -12,7 +12,34 @@ from backend.plans.models import Invite
 from backend.plans.transaction import PlanTransaction
 
 
+def _utc_now() -> datetime:
+    """DB(naive datetime)와 비교하기 위해 시간대 정보를 뗀 현재 UTC 시각"""
+    return datetime.now(timezone.utc).replace(tzinfo=None)
+
+
 class InviteService:
+
+    @staticmethod
+    def _check_usable(invite) -> None:
+        """초대 코드가 존재하고, 아직 쓰지 않았고, 만료되지 않았는지 확인"""
+        if invite is None:
+            raise HTTPException(404, "초대 코드가 존재하지 않습니다.")
+
+        if invite.i_used:
+            raise HTTPException(409, "이미 사용된 초대 코드입니다.")
+
+        if invite.i_expire <= _utc_now():
+            raise HTTPException(400, "만료된 초대 코드입니다.")
+
+    @staticmethod
+    async def _check_not_joined(db: AsyncSession, plan, user_id: int) -> None:
+        """이미 방장이거나 멤버인 사람은 다시 참여할 수 없음"""
+        if plan.u_id == user_id:
+            raise HTTPException(409, "이미 참여 중인 여행입니다.")
+
+        existing = await PlanMemberCrud.get_by_plan_and_user(db, plan.p_id, user_id)
+        if existing is not None:
+            raise HTTPException(409, "이미 참여 중인 여행입니다.")
 
     @staticmethod
     async def create_invite(
@@ -25,7 +52,7 @@ class InviteService:
         if plan.u_id != user_id:
             raise HTTPException(403, "방장만 초대 코드를 발급할 수 있습니다.")
 
-        now = datetime.now(timezone.utc).replace(tzinfo=None)
+        now = _utc_now()
         expires_at = now + timedelta(days=7)
 
         code_value = secrets.token_hex(6).upper()
@@ -69,17 +96,7 @@ class InviteService:
     @staticmethod
     async def verify_invite(db: AsyncSession, code: str):
         invite = await InviteCrud.get_by_code(db, code)
-
-        if invite is None:
-            raise HTTPException(404, "초대 코드가 존재하지 않습니다.")
-
-        if invite.i_used:
-            raise HTTPException(409, "이미 사용된 초대 코드입니다.")
-
-        now = datetime.now(timezone.utc).replace(tzinfo=None)
-
-        if invite.i_expire <= now:
-            raise HTTPException(400, "만료된 초대 코드입니다.")
+        InviteService._check_usable(invite)
 
         await PlanValidator.check_plan(db, invite.p_id)
         return invite
@@ -101,28 +118,10 @@ class InviteService:
                 .with_for_update()
             )
             invite = result.scalar_one_or_none()
-
-            if invite is None:
-                raise HTTPException(404, "초대 코드가 존재하지 않습니다.")
-
-            if invite.i_used:
-                raise HTTPException(409, "이미 사용된 초대 코드입니다.")
-
-            now = datetime.now(timezone.utc).replace(tzinfo=None)
-
-            if invite.i_expire <= now:
-                raise HTTPException(400, "만료된 초대 코드입니다.")
+            InviteService._check_usable(invite)
 
             plan = await PlanValidator.check_plan(db, invite.p_id)
-
-            if plan.u_id == user_id:
-                raise HTTPException(409, "이미 참여 중인 여행입니다.")
-
-            existing = await PlanMemberCrud.get_by_plan_and_user(
-                db, invite.p_id, user_id
-            )
-            if existing is not None:
-                raise HTTPException(409, "이미 참여 중인 여행입니다.")
+            await InviteService._check_not_joined(db, plan, user_id)
 
             member = await PlanMemberCrud.create(
                 db, invite.p_id, user_id, role

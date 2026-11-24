@@ -90,6 +90,24 @@ class JournalService:
         }
 
     @staticmethod
+    async def _validate_submitted_items(db: AsyncSession, j_id: int, items):
+        """수정 요청의 일정 목록이 기존 여행기 일정과 정확히 일치하고, 각 항목이 올바른지 확인"""
+        existing_items = await JournalItemCrud.get_by_journal(db, j_id)
+        existing_ids = {item.ji_id for item in existing_items}
+        submitted_ids = [item.ji_id for item in items]
+
+        if len(submitted_ids) != len(set(submitted_ids)):
+            raise HTTPException(400, "중복된 여행 일정이 있습니다.")
+
+        if set(submitted_ids) != existing_ids:
+            raise HTTPException(
+                400, "여행기의 모든 일정을 정확히 전달해야 합니다."
+            )
+
+        for item in items:
+            JournalValidator.check_item_update(item)
+
+    @staticmethod
     async def update_journal(
         db: AsyncSession,
         j_id: int,
@@ -103,20 +121,7 @@ class JournalService:
                 raise HTTPException(422, "여행기 제목을 입력해야 합니다.")
 
         if data.items is not None:
-            existing_items = await JournalItemCrud.get_by_journal(db, j_id)
-            existing_ids = {item.ji_id for item in existing_items}
-            submitted_ids = [item.ji_id for item in data.items]
-
-            if len(submitted_ids) != len(set(submitted_ids)):
-                raise HTTPException(400, "중복된 여행 일정이 있습니다.")
-
-            if set(submitted_ids) != existing_ids:
-                raise HTTPException(
-                    400, "여행기의 모든 일정을 정확히 전달해야 합니다."
-                )
-
-            for item in data.items:
-                JournalValidator.check_item_update(item)
+            await JournalService._validate_submitted_items(db, j_id, data.items)
 
         journal_update = JournalUpdate(
             **data.model_dump(exclude_unset=True, exclude={"items"})
