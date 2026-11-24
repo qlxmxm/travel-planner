@@ -1,3 +1,4 @@
+# [여행기] DB 테이블 정의: journals(여행기), journals_item(일정별 글), journals_comment(댓글), journals_like(좋아요), journals_hashtag(해시태그 연결)
 
 from datetime import datetime
 from typing import Optional

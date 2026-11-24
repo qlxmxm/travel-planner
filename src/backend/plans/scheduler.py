@@ -1,3 +1,4 @@
+# [여행계획] 1분마다 기간이 끝난 여행을 "완료" 상태로 바꾸는 예약 작업 (서버 시작 때도 한 번 실행, main.py 에서 시작)
 from apscheduler.schedulers.asyncio import AsyncIOScheduler
 
 from backend.db import AsyncSessionLocal

@@ -1,3 +1,4 @@
+# [공통] DB 연결: 비동기 엔진(async_engine), 세션(AsyncSessionLocal), 요청마다 세션을 주는 get_db, 테이블의 부모 Base
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy import create_engine
 from backend.core.settings import settings

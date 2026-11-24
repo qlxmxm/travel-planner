@@ -1,3 +1,4 @@
+// [공통] 앱 시작점: 화면에 쓰는 CSS 를 모두 불러오고, 라우터(BrowserRouter)와 로그인 상태(AuthProvider)로 App 을 감쌉니다.
 import React from 'react';
 import ReactDOM from 'react-dom/client';
 import { BrowserRouter } from 'react-router-dom';

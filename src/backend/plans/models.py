@@ -1,3 +1,4 @@
+# [여행계획] DB 테이블 정의: plans(여행), plan_members(멤버), invite(초대 코드), plan_details(일정), budgets·expenses(예산·지출), hashtag·plan_hashtag, plan_join_requests(참여 요청)
 
 from datetime import datetime
 from typing import Optional

@@ -1,3 +1,4 @@
+// [여행기] 여행기 API 호출: 목록·상세·쓰기(여행계획에서)·수정·삭제, 댓글, 좋아요, 해시태그. 서버 주소: /api/journals
 
 import axios from 'axios';
 import { getToken } from './client.js';

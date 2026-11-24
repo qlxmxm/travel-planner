@@ -1,3 +1,4 @@
+# [공통] .env 파일에서 DB 접속 정보·토큰 설정을 읽어옵니다. (다른 곳에서는 `from backend.core.settings import settings` 로 사용)
 from pydantic_settings import BaseSettings
 from pydantic import Field
 from datetime import timedelta
