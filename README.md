@@ -7,7 +7,7 @@ React(Vite) 프론트 + FastAPI 백엔드 + MySQL 로 만든 여행 계획 웹 �
 
 ### 1. DB (MySQL 8.0.16 이상)
 1. Workbench 에서 스키마를 하나 만들고 선택합니다. (예: `travel_planner`)
-2. 루트의 [`create_tables.sql`](create_tables.sql) 전체를 열어 실행합니다. (테이블 18개)
+2. 루트의 [`create_tables.sql`](create_tables.sql) 전체를 열어 실행합니다. (테이블 19개)
 
 ### 2. 백엔드
 ```bash
