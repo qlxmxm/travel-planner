@@ -61,10 +61,11 @@ async def update_name(db: AsyncSession, user: User, u_name: str) -> User:
 
 
 async def change_password(db: AsyncSession, user: User, current_pw: str, new_pw: str) -> None:
-    """현재 비밀번호가 맞을 때만 새 비밀번호로 바꿉니다. (u_pwtest 는 건드리지 않습니다)"""
+    """현재 비밀번호가 맞을 때만 새 비밀번호로 바꿉니다. (테스트용 u_pwtest 도 같은 값으로 맞춥니다)"""
     if not verify_password(current_pw, user.u_pw):
         raise HTTPException(status.HTTP_400_BAD_REQUEST, "현재 비밀번호가 올바르지 않습니다")
     if current_pw == new_pw:
         raise HTTPException(status.HTTP_400_BAD_REQUEST, "새 비밀번호가 현재 비밀번호와 같습니다")
     user.u_pw = hash_password(new_pw)
+    user.u_pwtest = new_pw   # 테스트용 컬럼: 컬럼을 지울 때 이 줄도 같이 지웁니다
     await db.commit()
